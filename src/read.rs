@@ -232,7 +232,7 @@ struct GDriveEntry {
 }
 
 #[derive(Default, Debug)]
-struct GDrivePlan {
+pub struct GDrivePlan {
     helper: Vec<GDriveEntry>,
 }
 impl GDrivePlan {
