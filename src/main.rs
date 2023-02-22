@@ -16,7 +16,8 @@ fn main() {
         "Plaine",
         native_options,
         Box::new(|cc| Box::new(Gui::new(cc))),
-    ).expect("eframe init to succeed");
+    )
+    .expect("eframe init to succeed");
 }
 
 /// The Plaine application data.
@@ -144,8 +145,7 @@ impl eframe::App for Gui {
                 if ui.button("Write Check File").clicked() {
                     let items = self.items.clone();
                     let plan_name = self.plan_name.clone().unwrap_or_default();
-                    plaine::write::write_check_file(items, plan_name)
-                        .expect("File to write");
+                    plaine::write::write_check_file(items, plan_name).expect("File to write");
                 }
                 self.main_window(ui);
             });
