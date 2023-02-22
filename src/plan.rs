@@ -1,6 +1,4 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Entry {
