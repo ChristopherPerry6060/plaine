@@ -1,4 +1,3 @@
-#![allow(unused_imports, unused_import_braces, dead_code)]
 //! Read: functions and structures for reading Amz reports, and serialized types
 //! from the filesystem
 //!
