@@ -168,14 +168,6 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
         .collect::<Vec<_>>();
 
     for item in entries {
-        // AmzFbaInventory pulling.
-        if let Some(found) = afi_vec.iter().find(|row| row.fnsku == item.get_fnsku()) {
-            let msku = found.msku.clone();
-            let condition = found.condition.clone();
-            item.set_msku(Some(msku));
-            item.set_condition(Some(condition));
-        };
-
         // MonthlyStorageFees pulling.
         if let Some(found) = msf_vec.iter().find(|row| row.fnsku == item.get_fnsku()) {
             item.set_title(found.product_name.clone());
@@ -192,6 +184,13 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
                 found.shortest_side.unwrap_or_default(),
             ];
             item.set_amz_dimensions(Some(amz_dims));
+        };
+        // AmzFbaInventory pulling.
+        if let Some(found) = afi_vec.iter().find(|row| row.fnsku == item.get_fnsku()) {
+            let msku = found.msku.clone();
+            let condition = found.condition.clone();
+            item.set_msku(Some(msku));
+            item.set_condition(Some(condition));
         };
     }
     Ok(())
