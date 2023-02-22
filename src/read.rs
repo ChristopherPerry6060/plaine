@@ -322,8 +322,8 @@ impl TryFrom<GDriveEntry> for Vec<Entry> {
                 for _ in 0..cases {
                     let mut entry = Entry::default();
                     entry.set_fnsku(fnsku.clone());
-                    entry.set_units(units as i32);
-                    entry.set_id(gen_pwid());
+                    entry.set_units(per_case as i32);
+                    entry.set_id(gen_pw_uuid());
                     entry.set_total_pounds(case_weight);
                     helper.push(entry.clone());
                 }
