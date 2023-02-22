@@ -3,6 +3,7 @@ use anyhow::{anyhow, bail, Error, Result};
 
 // Monthly storage fees.
 #[derive(serde::Deserialize, Debug, Default, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct MonthlyStorageFees {
     #[serde(alias = "asin")]
     asin: Option<String>,
@@ -65,11 +66,42 @@ impl MonthlyStorageFees {
     where
         P: AsRef<Path>,
     {
+        let cols = vec![
+            "asin",
+            "fnsku",
+            "product_name",
+            "fulfillment_center",
+            "country_code",
+            "longest_side",
+            "median_side",
+            "shortest_side",
+            "measurement_units",
+            "weight",
+            "weight_units",
+            "item_volume",
+            "volume_units",
+            "product_size_tier",
+            "average_quantity_on_hand",
+            "average_quantity_pending_removal",
+            "estimated_total_item_volume",
+            "month_of_charge",
+            "storage_rate",
+            "currency",
+            "estimated_monthly_storage_fee",
+            "dangerous_goods_storage_type",
+            "eligible_for_inventory_discount",
+            "qualifies_for_inventory_discount",
+            "total_incentive_fee_amount",
+            "breakdown_incentive_fee_amount",
+            "average_quantity_customer_orders",
+        ];
+
+        let hdr = StringRecord::from(cols);
         let mut rdr = csv::Reader::from_path(path)?;
         let msf = rdr
             .records()
             .filter_map(|x| x.ok())
-            .map(|x| x.deserialize(None))
+            .map(|x| x.deserialize(Some(&hdr)))
             .filter_map(|x| x.ok())
             .collect::<Vec<MonthlyStorageFees>>();
         Ok(msf)
@@ -81,16 +113,17 @@ impl MonthlyStorageFees {
 /// [here](https://sellercentral.amazon.com/reportcentral/AFNInventoryReport/1).
 #[derive(serde::Deserialize, Debug, Default, Clone)]
 pub struct AmzFbaInventory {
-    #[serde(alias = "sku")]
+    #[serde(alias = "seller-sku")]
     msku: String,
-    #[serde(alias = "fnsku")]
+    #[serde(alias = "fulfillment-channel-sku")]
     fnsku: String,
     #[serde(alias = "asin")]
     asin: String,
-    #[serde(alias = "product-name")]
     title: String,
-    #[serde(alias = "condition")]
+    #[serde(alias = "condition-type")]
     condition: String,
+    #[serde(alias = "Warehouse-Condition-code")]
+    #[serde(alias = "Quantity Available")]
 }
 impl AmzFbaInventory {
     fn from_path<P>(path: P) -> Result<Vec<AmzFbaInventory>, csv::Error>
@@ -98,6 +131,11 @@ impl AmzFbaInventory {
         P: AsRef<Path>,
     {
         let mut rdr = csv::Reader::from_path(path)?;
+        let header = rdr.headers()?;
+        // Stop other reports from deserde into this.
+        if header.into_iter().any(|x| x.eq_ignore_ascii_case("weight")) {
+            bail!("wrong report type")
+        };
         let afi = rdr
             .records()
             .filter_map(|x| x.ok())
