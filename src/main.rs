@@ -23,7 +23,7 @@ fn main() {
 #[derive(Default, Debug)]
 pub struct Gui {
     plan_name: Option<String>,
-    selected: HashSet<String>,
+    unselected: HashSet<String>,
     items: Vec<Entry>,
 }
 
@@ -78,7 +78,7 @@ impl Gui {
         let mut sums = item_copy.get_as_sums();
         sums.sort_by_key(|i| i.get_fnsku().to_string());
 
-        let selected = &mut self.selected;
+        let unselected = &mut self.unselected;
 
         if ui.button("Upload").clicked() {
             let picked = Gui::show_file_diaglog();
@@ -88,7 +88,8 @@ impl Gui {
             };
         };
 
-        Grid::new("buttons").show(ui, |ui| {
+        Grid::new("buttons").striped(true).show(ui, |ui| {
+            ui.label("");
             ui.label("msku");
             ui.label("Fnsku");
             ui.label("Units");
@@ -97,12 +98,8 @@ impl Gui {
             ui.end_row();
 
             for entry in sums {
-                // Is the fnsku in the selected set?
-                let fnsku_lookup = entry.get_fnsku();
-                let checkbox_state = selected.contains(fnsku_lookup);
-                let _pre_checkbox_state = checkbox_state;
 
-                // string
+                // Prep strings
                 let amz_size = entry.get_amz_size().clone().unwrap_or_default();
                 let fnsku = entry.get_fnsku();
                 let msku = entry.get_msku().clone().unwrap_or_default();
@@ -113,6 +110,9 @@ impl Gui {
                 let _id = entry.get_id();
                 let _upc = entry.get_upc().clone().unwrap_or_default();
 
+                // Inverse the set since the default state is selected.
+                let mut unchecked = !unselected.contains(fnsku);
+                ui.checkbox(&mut unchecked, "");
                 ui.label(msku);
                 ui.label(fnsku);
                 ui.label(units);
@@ -120,10 +120,10 @@ impl Gui {
                 ui.label(title);
                 ui.end_row();
 
-                if checkbox_state {
-                    selected.insert(fnsku_lookup.to_owned());
+                if !unchecked {
+                    unselected.insert(fnsku.to_string());
                 } else {
-                    selected.remove(fnsku_lookup);
+                    unselected.remove(fnsku);
                 };
             }
         });
