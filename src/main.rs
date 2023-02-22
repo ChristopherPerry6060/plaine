@@ -40,34 +40,32 @@ impl Gui {
     }
 
     fn instruction_window(&mut self, ui: &mut Ui) {
+        //
         ui.separator();
         ui.strong("Prefix GD plan with CLOSED");
         ui.separator();
+        //
         ui.label("1: Go to Google Drive Shipping Plan folder.");
         ui.label("2: Open the plan you want to close by clicking on it.");
         ui.label("3: Double click the name of the plan in the top left.");
         ui.label("3a: This should allow you to edit the name of the sheet.");
         ui.label("4: In all capital letters, prefix the name with CLOSED.");
+        //
         ui.separator();
         ui.strong("Download Plan as CSV");
         ui.separator();
+        //
         ui.label("5: Right under where you just changed the name, click on the File menu.");
         ui.label("6: Navigate the menu until you see the 'Download' option.");
         ui.label("7: Hover over download and select CSV.");
         ui.label("8: Keep note of where our downloaded file was saved to!");
         ui.label("8a: It likely went straight into your downloads folder.");
         ui.label("8b: Anywhere is fine, we will just need it for the next steps.");
-        ui.separator();
-        ui.strong("Plaine");
-        ui.separator();
-        ui.label("Moving away from Google Drive.");
-        ui.label("Note: If you are already reading this from within Plaine, you can skip right down to 'Check File'.");
-        ui.label("9: (More than halfway done!) Navigate in your computer's file browser to 'Dropbox/Gramophone'");
-        ui.label("10: Look for a regular folder named 'Plaine'");
-        ui.label("11: Open the folder, and double click the Plaine application.");
+        //
         ui.separator();
         ui.strong("Check File");
         ui.separator();
+        //
         ui.label("1. In the other window click the 'Upload' button.");
         ui.label("2. Use the file dialog to locate the csv file we download earlier.");
         ui.label("3. Once found, double-click / select the csv file.");
