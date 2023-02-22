@@ -1,5 +1,73 @@
 use std::collections::HashMap;
 
+pub trait Plan {
+    fn entries(&self) -> &Vec<Entry>;
+
+    /// Return a `HashMap` that is keyed with box Ids leading to Entries
+    fn fold_cases(&self) -> HashMap<String, Vec<&Entry>> {
+        self.entries()
+            .iter()
+            .fold(HashMap::new(), |mut acc, entry| {
+                match acc.get_mut(entry.get_id()) {
+                    Some(case) => {
+                        case.push(entry);
+                    }
+                    None => {
+                        let id = entry.get_id().to_string();
+                        acc.insert(id, vec![entry]).expect("New hashmap key");
+                    }
+                };
+                acc
+            })
+    }
+
+    /// Return the total case count of the [`Plan`].
+    fn total_cases(&self) -> usize {
+        self.fold_cases().keys().count()
+    }
+
+    fn get_as_sums(&self) -> Vec<Entry> {
+        self.entries()
+            .iter()
+            .fold(HashMap::<String, Entry>::new(), |mut acc, x| {
+                match acc.get_mut(x.get_fnsku()) {
+                    Some(inner_entry) => {
+                        inner_entry.units += x.get_units();
+                    }
+                    None => {
+                        acc.insert(x.fnsku.to_owned(), x.clone());
+                    }
+                };
+                acc
+            })
+            .into_values()
+            .collect::<Vec<_>>()
+    }
+
+    fn units_of_skus(&self) -> HashMap<String, i32> {
+        self.entries()
+            .iter()
+            .fold(HashMap::new(), |mut acc, entry| {
+                match acc.get_mut(entry.get_fnsku()) {
+                    Some(units) => {
+                        *units += entry.get_units();
+                    }
+                    None => {
+                        let id = entry.get_id().to_string();
+                        acc.insert(id, entry.units).expect("New hashmap key");
+                    }
+                };
+                acc
+            })
+    }
+}
+
+impl Plan for Vec<Entry> {
+    fn entries(&self) -> &Vec<Entry> {
+        self
+    }
+}
+
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Entry {
     amz_size: Option<String>,
