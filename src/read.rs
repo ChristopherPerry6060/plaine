@@ -1,5 +1,8 @@
 use crate::plan::Entry;
+use crate::utils::gen_pw_uuid;
 use anyhow::{anyhow, bail, Error, Result};
+use csv::StringRecord;
+use std::path::Path;
 
 // Monthly storage fees.
 #[derive(serde::Deserialize, Debug, Default, Clone)]
@@ -22,15 +25,15 @@ pub struct MonthlyStorageFees {
     #[serde(alias = "shortest_side")]
     shortest_side: Option<f32>,
     #[serde(alias = "measurement_units")]
-    measurement_units: Option<String>,
+    _measurement_units: Option<String>,
     #[serde(alias = "weight")]
     weight: Option<f32>,
     #[serde(alias = "weight_units")]
-    weight_units: Option<String>,
+    _weight_units: Option<String>,
     #[serde(alias = "item_volume")]
-    item_volume: Option<f32>,
+    _item_volume: Option<f32>,
     #[serde(alias = "volume_units")]
-    volume_units: Option<String>,
+    _volume_units: Option<String>,
     #[serde(alias = "product_size_tier")]
     product_size_tier: Option<String>,
     #[serde(alias = "average_quantity_on_hand")]
@@ -48,7 +51,7 @@ pub struct MonthlyStorageFees {
     #[serde(alias = "estimated_monthly_storage_fee")]
     _estimated_monthly_storage_fee: Option<f32>,
     #[serde(alias = "dangerous_goods_storage_type")]
-    dangerous_goods_storage_type: Option<String>,
+    _dangerous_goods_storage_type: Option<String>,
     #[serde(alias = "eligible_for_inventory_discount")]
     _eligible_for_inventory_discount: Option<String>,
     #[serde(alias = "qualifies_for_inventory_discount")]
@@ -60,7 +63,6 @@ pub struct MonthlyStorageFees {
     #[serde(alias = "average_quantity_customer_orders")]
     _average_quantity_customer_orders: Option<String>,
 }
-
 impl MonthlyStorageFees {
     fn from_path<P>(path: P) -> Result<Vec<MonthlyStorageFees>, csv::Error>
     where
@@ -118,15 +120,16 @@ pub struct AmzFbaInventory {
     #[serde(alias = "fulfillment-channel-sku")]
     fnsku: String,
     #[serde(alias = "asin")]
-    asin: String,
-    title: String,
+    _asin: String,
     #[serde(alias = "condition-type")]
     condition: String,
     #[serde(alias = "Warehouse-Condition-code")]
+    _warehouse: String,
     #[serde(alias = "Quantity Available")]
+    _available: String,
 }
 impl AmzFbaInventory {
-    fn from_path<P>(path: P) -> Result<Vec<AmzFbaInventory>, csv::Error>
+    fn from_path<P>(path: P) -> anyhow::Result<Vec<AmzFbaInventory>>
     where
         P: AsRef<Path>,
     {
@@ -152,13 +155,13 @@ impl AmzFbaInventory {
 /// * [`AmzFbaInventory`]
 /// * [`MonthlyStorageFees`]
 fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
-    let afi_vec = read_dir(".local")?
+    let afi_vec = std::fs::read_dir(".local")?
         .filter_map(|x| x.ok())
         .filter_map(|x| AmzFbaInventory::from_path(x.path()).ok())
         .flatten()
         .collect::<Vec<_>>();
 
-    let msf_vec = read_dir(".local")?
+    let msf_vec = std::fs::read_dir(".local")?
         .filter_map(|x| x.ok())
         .filter_map(|x| MonthlyStorageFees::from_path(x.path()).ok())
         .flatten()
@@ -181,7 +184,7 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
             item.set_total_pounds(found.weight);
             item.set_amz_size(found.product_size_tier.clone());
 
-            // These might not be very accurate, so don't overwrite 
+            // These might not be very accurate, so don't overwrite
             // what we already have.
             let amz_dims = [
                 found.longest_side.unwrap_or_default(),
