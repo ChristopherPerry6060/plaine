@@ -1,3 +1,7 @@
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use uuid::Uuid;
+
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Entry {
     amz_size: Option<String>,
@@ -11,6 +15,7 @@ pub struct Entry {
     id: String,
     upc: Option<String>,
     dimensions: Option<[f32; 3]>,
+    amz_dimensions: Option<[f32; 3]>,
 }
 impl Entry {
     pub fn set_amz_size(&mut self, set: Option<String>) {
@@ -73,8 +78,12 @@ impl Entry {
     pub fn get_upc(&self) -> &Option<String> {
         &self.upc
     }
-    pub fn set_dimensions(&mut self, dims: [f32; 3]) {
-        let v = dims.to_vec();
+    pub fn set_dimensions(&mut self, dims: Option<[f32; 3]>) {
+        let Some(udims) = dims else {
+            self.dimensions = None;
+            return;
+        };
+        let v = udims.to_vec();
         let mut rounded = v.into_iter().map(|x| x.ceil() as u32).collect::<Vec<_>>();
         rounded.sort();
         let l = rounded
@@ -87,5 +96,24 @@ impl Entry {
             .pop()
             .expect("vec made from [f32;3] can be popped 3 times.");
         self.dimensions = Some([l as f32, w as f32, h as f32]);
+    }
+    pub fn set_amz_dimensions(&mut self, dims: Option<[f32; 3]>) {
+        let Some(udims) = dims else {
+            self.amz_dimensions = None;
+            return;
+        };
+        let v = udims.to_vec();
+        let mut rounded = v.into_iter().map(|x| x.ceil() as u32).collect::<Vec<_>>();
+        rounded.sort();
+        let l = rounded
+            .pop()
+            .expect("vec made from [f32;3] can be popped 3 times.");
+        let w = rounded
+            .pop()
+            .expect("vec made from [f32;3] can be popped 3 times.");
+        let h = rounded
+            .pop()
+            .expect("vec made from [f32;3] can be popped 3 times.");
+        self.amz_dimensions = Some([l as f32, w as f32, h as f32]);
     }
 }
