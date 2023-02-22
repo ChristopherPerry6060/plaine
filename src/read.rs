@@ -1,18 +1,5 @@
 use crate::plan::Entry;
 use anyhow::{anyhow, bail, Error, Result};
-use parity_wordlist::random_phrase;
-use std::fs::read_dir;
-use std::hash::Hasher;
-use std::path::{Path, PathBuf};
-use uuid::Uuid;
-
-/// Generate a random id, consisting of two parity words and a uuid.
-fn gen_pwid() -> String {
-    let word = random_phrase(1);
-    let word2 = random_phrase(1);
-    let uuid = Uuid::new_v4();
-    format!("{word}-{word2}-{uuid}")
-}
 
 // Monthly storage fees.
 #[derive(serde::Deserialize, Debug, Default, Clone)]
