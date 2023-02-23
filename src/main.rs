@@ -124,6 +124,7 @@ impl Gui {
                 self.confirming_set_button = true
             };
             if self.confirming_set_button && ui.button("Are you sure?").clicked() {
+                // TODO: This should show a warning about the error.
                 if let Ok(mut negatives) = self.try_write_branch(branch) {
                     self.items.append(&mut negatives)
                 };
