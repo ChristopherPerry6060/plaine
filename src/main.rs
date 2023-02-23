@@ -137,7 +137,10 @@ impl eframe::App for Gui {
             .plan_name
             .clone()
             .unwrap_or_else(|| String::from("Waiting on Upload :)"));
-        CentralPanel::default().show(ctx, |_| {
+        CentralPanel::default().show(ctx, |ui| {
+            if ui.button("Reset App").clicked() {
+                *self = Gui::default();
+            };
             Window::new("Instruction").show(ctx, |ui| {
                 self.instruction_window(ui);
             });
