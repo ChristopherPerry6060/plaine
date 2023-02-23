@@ -1,7 +1,45 @@
 use std::collections::HashMap;
 
+use anyhow::Context;
+
 pub trait Plan {
     fn entries(&self) -> Vec<Entry>;
+
+    fn __serialize_dont_write(
+        &self,
+        plan_name: &str,
+        branch_name: &str,
+    ) -> anyhow::Result<(String, String, String)> {
+        let branch = branch_name.to_owned();
+        let value = self.entries();
+        let json = serde_json::to_string_pretty(&value)?;
+        let full_name = format!("{plan_name}-{branch}");
+        let full_path = format!("/.local/{full_name}.json");
+        let resp = (json, full_name, full_path);
+        Ok(resp)
+    }
+
+    fn serialize(&self, plan_name: &str, branch_name: &str) -> anyhow::Result<String> {
+        let branch = branch_name.to_owned();
+        let value = self.entries();
+        let json = serde_json::to_string_pretty(&value)?;
+        let full_name = format!("{plan_name}-{branch}");
+        let full_path = format!(".local/{full_name}.json");
+        std::fs::write(full_path, json).context("Serialization failed")?;
+        Ok(full_name)
+    }
+
+    fn as_negated(&self) -> Vec<Entry> {
+        self.entries()
+            .into_iter()
+            .map(|mut x| {
+                let old_units = x.get_units();
+                let new_units = old_units.checked_neg().unwrap_or_default();
+                x.set_units(new_units);
+                x
+            })
+            .collect()
+    }
 
     /// Return the number of cases in [`Self`] with more than 0 units.
     fn number_of_real_cases(&self) -> usize {
