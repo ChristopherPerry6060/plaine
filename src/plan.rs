@@ -374,4 +374,39 @@ mod tests {
         let zero = plan.number_of_nonzero_cases();
         assert_eq!(zero, 0);
     }
+    #[test]
+    fn negate_in_place() {
+        let mut entry1 = Entry::default();
+        let id = String::from("abc");
+        let fnsku = String::from("zzz");
+
+        entry1.set_id(id);
+        entry1.set_fnsku(fnsku);
+        entry1.set_units(12);
+
+        let mut entry2 = entry1.clone();
+        entry2.set_units(20);
+
+        let plan = vec![entry1, entry2];
+        let _neg = plan.as_negated();
+    }
+    #[test]
+    fn serialize() {
+        let mut entry1 = Entry::default();
+        let id = String::from("abc");
+        let fnsku = String::from("zzz");
+
+        entry1.set_id(id);
+        entry1.set_fnsku(fnsku);
+        entry1.set_units(12);
+
+        let mut entry2 = entry1.clone();
+        entry2.set_units(20);
+
+        let plan = vec![entry1, entry2];
+        let neg = plan.as_negated();
+        let _json = neg
+            .__serialize_dont_write("the-plan-name", "the-branch-name")
+            .unwrap_or_default();
+    }
 }
