@@ -22,3 +22,19 @@ pub fn write_check_file(entry_vec: Vec<Entry>, plan_name: String) -> std::io::Re
     let path = PathBuf::from(format!("{plan_name}-CheckFile.csv"));
     std::fs::write(path, contents)
 }
+
+pub fn write_upload_txt() -> std::io::Result<()> {
+    let mut header = std::fs::read_to_string(".local/upload.txt")?;
+
+    for _ in 0..40 {
+        let row = format!("msku\t12\tSeller\tSeller\n");
+        header.push_str(&row);
+    }
+    let path = PathBuf::from(format!("doesthis-Upload.txt"));
+    std::fs::write(path, header).unwrap();
+    Ok(())
+}
+#[test]
+fn testss() {
+    write_upload_txt().unwrap();
+}
