@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub trait Plan {
-    fn entries(&self) -> &Vec<Entry>;
+    fn entries(&self) -> Vec<Entry>;
 
     /// Return a `HashMap` that is keyed with box Ids leading to Entries
     fn fold_cases(&self) -> HashMap<String, Vec<&Entry>> {
@@ -63,8 +63,8 @@ pub trait Plan {
 }
 
 impl Plan for Vec<Entry> {
-    fn entries(&self) -> &Vec<Entry> {
-        self
+    fn entries(&self) -> Vec<Entry> {
+        self.clone()
     }
 }
 
