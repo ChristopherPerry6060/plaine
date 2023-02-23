@@ -1,4 +1,5 @@
 use crate::plan::{Entry, Plan};
+use anyhow::{anyhow, Context, Result};
 use std::path::PathBuf;
 
 pub fn write_check_file(entry_vec: Vec<Entry>, plan_name: String) -> std::io::Result<()> {
@@ -23,14 +24,34 @@ pub fn write_check_file(entry_vec: Vec<Entry>, plan_name: String) -> std::io::Re
     std::fs::write(path, contents)
 }
 
-pub fn write_upload_txt() -> std::io::Result<()> {
+pub type UploadResponse = Result<(String, Vec<Entry>)>;
+pub fn write_upload_txt(entry_vec: Vec<Entry>, plan_name: String) -> UploadResponse {
     let mut header = std::fs::read_to_string(".local/upload.txt")?;
+    let predicate = header.clone();
 
-    for _ in 0..40 {
-        let row = format!("msku\t12\tSeller\tSeller\n");
-        header.push_str(&row);
+    let entry_w_msku: Vec<_> = entry_vec
+        .clone()
+        .into_iter()
+        .filter(|x| x.get_msku().is_some())
+        .collect();
+
+    for entry in entry_w_msku.get_as_sums() {
+        match entry.get_msku() {
+            Some(msku) => {
+                let units = entry.get_units();
+                let row = format!("{msku}\t{units}\tSeller\tSeller\n");
+                header.push_str(&row);
+            }
+            None => continue,
+        };
     }
-    let path = PathBuf::from(format!("doesthis-Upload.txt"));
-    std::fs::write(path, header).unwrap();
-    Ok(())
+    if header != predicate {
+        let pw = parity_wordlist::random_phrase(1);
+        let upload_name = format!("{plan_name}-{pw}");
+        let path = PathBuf::from(format!("{upload_name}-Upload.txt"));
+        std::fs::write(path, header).context("fs::write failed")?;
+        Ok((upload_name, entry_w_msku))
+    } else {
+        Err(anyhow!("Empty upload file"))
+    }
 }
