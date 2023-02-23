@@ -5,30 +5,27 @@ pub trait Plan {
 
     /// Return the number of cases in [`Self`] with more than 0 units.
     fn number_of_real_cases(&self) -> usize {
-        // Flatten would help here.
         self.as_folded_cases()
-            .into_iter()
-            .map(|(_, v)| v.into_iter().map(|x: Entry| x.units).sum::<i32>())
+            .into_values()
+            .map(|v| v.into_iter().map(|x: Entry| x.units).sum::<i32>())
             .filter(|x| x.is_positive())
             .count()
     }
 
     /// Return the number of cases in [`Self`] with amounts not equal to 0.
     fn number_of_nonzero_cases(&self) -> usize {
-        // Flatten would help here.
         self.as_folded_cases()
-            .into_iter()
-            .map(|(_, v)| v.into_iter().map(|x: Entry| x.units).sum())
+            .into_values()
+            .map(|v| v.into_iter().map(|x: Entry| x.units).sum())
             .filter(|x: &i32| x != &0)
             .count()
     }
 
     /// Return the number of cases in [`Self`] with amounts that are below 0.
     fn negative_unit_case_count(&self) -> usize {
-        // Flatten would help here.
         self.as_folded_cases()
-            .into_iter()
-            .map(|(_, v)| v.into_iter().map(|x: Entry| x.units).sum())
+            .into_values()
+            .map(|v| v.into_iter().map(|x: Entry| x.units).sum())
             .filter(|x: &i32| x != &0)
             .count()
     }
