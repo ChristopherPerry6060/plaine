@@ -269,3 +269,74 @@ impl Entry {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn plan_group_by_case() {
+        let mut entry1 = Entry::default();
+
+        let id = String::from("ABCD");
+        let fnsku = String::from("XDFJHII");
+
+        entry1.set_id(id);
+        entry1.set_fnsku(fnsku);
+        entry1.set_units(12);
+
+        let mut entry2 = entry1.clone();
+        entry2.set_units(-8);
+
+        let plan = vec![entry1, entry2];
+
+        let cases = plan.as_group_by_case();
+        assert_eq!(cases.keys().count(), 1);
+    }
+
+    #[test]
+    fn plan_as_folded_cases() {
+        let mut entry1 = Entry::default();
+        let id = String::from("Box-id-33");
+        let fnsku = String::from("XAEET");
+
+        entry1.set_id(id);
+        entry1.set_fnsku(fnsku);
+        entry1.set_units(12);
+
+        let mut entry2 = entry1.clone();
+        entry2.set_units(15);
+
+        let plan = vec![entry1, entry2];
+        let mut folded = plan.as_folded_cases();
+
+        let value = folded
+            .remove("Box-id-33")
+            .unwrap_or_default()
+            .pop()
+            .unwrap_or_default();
+
+        assert_eq!(value.get_units(), &27);
+    }
+
+    #[test]
+    fn plan_case_counts() {
+        let mut entry1 = Entry::default();
+        let id = String::from("abc");
+        let fnsku = String::from("zzz");
+
+        entry1.set_id(id);
+        entry1.set_fnsku(fnsku);
+        entry1.set_units(12);
+
+        let mut entry2 = entry1.clone();
+        entry2.set_units(-12);
+
+        let plan = vec![entry1, entry2];
+
+        let seen = plan.number_of_seen_cases();
+        assert_eq!(seen, 1);
+
+        let zero = plan.number_of_nonzero_cases();
+        assert_eq!(zero, 0);
+    }
+}
