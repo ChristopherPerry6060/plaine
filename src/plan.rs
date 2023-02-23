@@ -125,6 +125,11 @@ impl Plan for Vec<Entry> {
     }
 }
 
+/// Each instance of an entry is bounded by two conditions.
+///
+/// * [`Self`] cannot span more than one physical box.
+/// * [`Self`] always describes a single Sku.
+///
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Entry {
     amz_size: Option<String>,
