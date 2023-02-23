@@ -30,7 +30,6 @@ pub fn write_upload_txt(entry_vec: Vec<Entry>, plan_name: String) -> UploadRespo
     let predicate = header.clone();
 
     let entry_w_msku: Vec<_> = entry_vec
-        .clone()
         .into_iter()
         .filter(|x| x.get_msku().is_some())
         .collect();
