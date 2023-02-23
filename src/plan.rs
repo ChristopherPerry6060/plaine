@@ -3,62 +3,119 @@ use std::collections::HashMap;
 pub trait Plan {
     fn entries(&self) -> Vec<Entry>;
 
-    /// Return a `HashMap` that is keyed with box Ids leading to Entries
-    fn fold_cases(&self) -> HashMap<String, Vec<&Entry>> {
+    /// Return the number of cases in [`Self`] with more than 0 units.
+    fn number_of_real_cases(&self) -> usize {
+        // Flatten would help here.
+        self.as_folded_cases()
+            .into_iter()
+            .map(|(_, v)| v.into_iter().map(|x: Entry| x.units).sum::<i32>())
+            .filter(|x| x.is_positive())
+            .count()
+    }
+
+    /// Return the number of cases in [`Self`] with amounts not equal to 0.
+    fn number_of_nonzero_cases(&self) -> usize {
+        // Flatten would help here.
+        self.as_folded_cases()
+            .into_iter()
+            .map(|(_, v)| v.into_iter().map(|x: Entry| x.units).sum())
+            .filter(|x: &i32| x != &0)
+            .count()
+    }
+
+    /// Return the number of cases in [`Self`] with amounts that are below 0.
+    fn negative_unit_case_count(&self) -> usize {
+        // Flatten would help here.
+        self.as_folded_cases()
+            .into_iter()
+            .map(|(_, v)| v.into_iter().map(|x: Entry| x.units).sum())
+            .filter(|x: &i32| x != &0)
+            .count()
+    }
+
+    /// Returns a copy of [`Self`], mapped by case id, and summed by equal fnsku.
+    fn as_folded_cases(&self) -> HashMap<String, Vec<Entry>> {
+        let grouped = self.as_group_by_case();
+        grouped.iter().fold(HashMap::new(), |mut acc, (k, v)| {
+            let vv = v.to_owned().get_as_sums();
+            acc.insert(k.to_string(), vv);
+            acc
+        })
+    }
+
+    /// Returns a copy of [`Self`] as raw entries, mapped by case id.
+    fn as_group_by_case(&self) -> HashMap<String, Vec<Entry>> {
+        let hm = HashMap::new();
         self.entries()
             .iter()
-            .fold(HashMap::new(), |mut acc, entry| {
-                match acc.get_mut(entry.get_id()) {
-                    Some(case) => {
-                        case.push(entry);
-                    }
-                    None => {
-                        let id = entry.get_id().to_string();
-                        acc.insert(id, vec![entry]);
-                    }
-                };
-                acc
+            .fold(hm, |mut acc, entry| match acc.get_mut(entry.get_id()) {
+                Some(case) => {
+                    case.push(entry.clone());
+                    acc
+                }
+                None => {
+                    let id = entry.get_id().to_string();
+                    acc.insert(id, vec![entry.clone()]);
+                    acc
+                }
             })
     }
 
-    /// Return the total case count of the [`Plan`].
-    fn total_cases(&self) -> usize {
-        self.fold_cases().keys().count()
+    /// Return the total cases that [`Self`] has seen.
+    ///
+    /// As the internal of [`Self`] is akin to a ledger, it may have
+    /// records that are currently negated. This function will still
+    /// count those cases.
+    ///
+    /// This function is mostly used for internal records. You probably
+    /// want to use [`Self::positive_units_case_count`].
+    fn number_of_seen_cases(&self) -> usize {
+        self.as_group_by_case().keys().count()
     }
 
+    /// Sum all Entries of [`Self`] into like Fnskus.
+    ///
+    /// Note that this function breaks the definition of [`Entry`].
+    /// Each instance of an entry is bounded by two conditions.
+    /// * It cannot span more than one physical box.
+    /// * It must adjustments of a single sku.
+    ///
+    /// This function differs from the others within [`Self`] in that it
+    /// immediately breaks the first bound.
     fn get_as_sums(&self) -> Vec<Entry> {
-        self.entries()
-            .iter()
-            .fold(HashMap::<String, Entry>::new(), |mut acc, x| {
-                match acc.get_mut(x.get_fnsku()) {
-                    Some(inner_entry) => {
-                        inner_entry.units += x.get_units();
-                    }
-                    None => {
-                        acc.insert(x.fnsku.to_owned(), x.clone());
-                    }
-                };
+        let fold = |mut acc: HashMap<String, Entry>, x: Entry| {
+            if let Some(inner_entry) = acc.get_mut(x.get_fnsku()) {
+                inner_entry.units += x.get_units();
                 acc
-            })
-            .into_values()
-            .collect::<Vec<_>>()
+            } else {
+                acc.insert(x.fnsku.to_owned(), x.clone());
+                acc
+            }
+        };
+        let hashmap = HashMap::<String, Entry>::new();
+        let iter = self.entries().into_iter();
+        // Fold each eq Fnsku into itself.
+        // No need to keep the keys, Entry has a sku field.
+        iter.fold(hashmap, fold).into_values().collect()
     }
 
+    /// Return a HashMap containing fnsku as a key, and units as value.
     fn units_of_skus(&self) -> HashMap<String, i32> {
-        self.entries()
-            .iter()
-            .fold(HashMap::new(), |mut acc, entry| {
-                match acc.get_mut(entry.get_fnsku()) {
-                    Some(units) => {
-                        *units += entry.get_units();
-                    }
-                    None => {
-                        let id = entry.get_id().to_string();
-                        acc.insert(id, entry.units).expect("New hashmap key");
-                    }
-                };
+        let fold = |mut acc: HashMap<String, i32>, entry: Entry| {
+            // Skus that have already been seen can be added to.
+            if let Some(units) = acc.get_mut(entry.get_fnsku()) {
+                *units += entry.get_units();
                 acc
-            })
+            } else {
+                // New skus can be inserted
+                let id = entry.get_id().to_string();
+                acc.insert(id, entry.units).expect("New hashmap key");
+                acc
+            }
+        };
+
+        // Fold each entry with equal skus into each other.
+        self.entries().into_iter().fold(HashMap::new(), fold)
     }
 }
 
