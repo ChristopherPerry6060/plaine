@@ -34,7 +34,3 @@ pub fn write_upload_txt() -> std::io::Result<()> {
     std::fs::write(path, header).unwrap();
     Ok(())
 }
-#[test]
-fn testss() {
-    write_upload_txt().unwrap();
-}
