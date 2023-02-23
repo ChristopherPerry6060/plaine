@@ -1,4 +1,5 @@
 #![windows_subsystem = "windows"]
+use anyhow::{bail, Result};
 use eframe::egui::{self, CentralPanel, Grid, Ui, Window};
 use eframe::{NativeOptions, Theme};
 use plaine::plan::{Entry, Plan};
@@ -26,6 +27,9 @@ pub struct Gui {
     plan_name: Option<String>,
     unselected: HashSet<String>,
     items: Vec<Entry>,
+    last_branch_name: Option<String>,
+    pending_branch: Vec<Entry>,
+    confirming_set_button: bool,
 }
 
 impl Gui {
@@ -75,17 +79,54 @@ impl Gui {
         ui.label("Click on 'Write Check File'");
     }
     fn main_window(&mut self, ui: &mut Ui) {
-        let item_copy = self.items.clone();
-        let mut sums = item_copy.get_as_sums();
+        let mut sums = self.items.clone().get_as_sums();
         sums.sort_by_key(|i| i.get_fnsku().to_string());
 
-        let unselected = &mut self.unselected;
+        let mut unselected = self.unselected.clone();
 
         if ui.button("Upload").clicked() {
             let picked = Gui::show_file_diaglog();
             if let Some(file) = picked {
                 self.items = plaine::read::GDrivePlan::proc_from_path(file).unwrap_or_default();
                 self.plan_name = Some(plaine::utils::gen_pw());
+            };
+        };
+
+        if ui.button("Write Check File").clicked() {
+            let items = self.items.clone();
+            let plan_name = self.plan_name.clone().unwrap_or_default();
+            plaine::write::write_check_file(items, plan_name).expect("File to write");
+        };
+
+        if ui.button("Write Upload File").clicked() {
+            let items = self.items.clone();
+
+            let selected_items: Vec<_> = items
+                .into_iter()
+                .filter(|x| !unselected.contains(x.get_fnsku()))
+                .collect();
+
+            let plan_name = self.plan_name.clone().unwrap_or_default();
+            match plaine::write::write_upload_txt(selected_items, plan_name) {
+                Ok((u_name, upload_items)) => {
+                    self.pending_branch = upload_items;
+                    self.last_branch_name = Some(u_name);
+                }
+                Err(err) => {
+                    dbg!(format!("Uh oh, {err}."));
+                }
+            };
+        };
+
+        if let Some(branch) = &self.last_branch_name {
+            let button_text = format!("Set the branch: {branch}?");
+            if ui.button(button_text).clicked() {
+                self.confirming_set_button = true
+            };
+            if self.confirming_set_button && ui.button("Are you sure?").clicked() {
+                if let Ok(mut negatives) = self.try_write_branch(branch) {
+                    self.items.append(&mut negatives)
+                };
             };
         };
 
@@ -99,7 +140,9 @@ impl Gui {
             ui.end_row();
 
             for entry in sums {
-
+                if entry.get_units() == &0 {
+                    continue;
+                };
                 // Prep strings
                 let amz_size = entry.get_amz_size().clone().unwrap_or_default();
                 let fnsku = entry.get_fnsku();
@@ -129,6 +172,17 @@ impl Gui {
             }
         });
     }
+
+    fn try_write_branch(&self, branch: &str) -> Result<Vec<Entry>> {
+        let trunk_str = match &self.plan_name {
+            Some(ref name) => name,
+            None => bail!("Trunk needs a name before setting branch"),
+        };
+        let set = self.pending_branch.clone();
+        let negatives = set.as_negated();
+        let _ = set.serialize(trunk_str, branch)?;
+        Ok(negatives)
+    }
 }
 
 impl eframe::App for Gui {
@@ -145,11 +199,6 @@ impl eframe::App for Gui {
                 self.instruction_window(ui);
             });
             Window::new(name).show(ctx, |ui| {
-                if ui.button("Write Check File").clicked() {
-                    let items = self.items.clone();
-                    let plan_name = self.plan_name.clone().unwrap_or_default();
-                    plaine::write::write_check_file(items, plan_name).expect("File to write");
-                }
                 self.main_window(ui);
             });
         });
