@@ -14,7 +14,7 @@ pub trait Plan {
                     }
                     None => {
                         let id = entry.get_id().to_string();
-                        acc.insert(id, vec![entry]).expect("New hashmap key");
+                        acc.insert(id, vec![entry]);
                     }
                 };
                 acc
