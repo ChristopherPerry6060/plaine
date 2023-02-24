@@ -22,7 +22,7 @@ pub(super) struct AllListingsReport {
     pub(super) product_id: Option<String>,
 }
 
-/// Product condtions that an Asin can be sold as.
+/// Product conditions for an Asin.
 #[derive(PartialEq, Default, Debug)]
 pub(super) enum Condition {
     #[default]
