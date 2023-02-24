@@ -133,9 +133,10 @@ impl Gui {
 
             let plan_name = self.trunk.clone().unwrap_or_default();
             match plaine::write::write_upload_txt(selected_items, plan_name) {
-                Ok((branch, upload_items)) => {
-                    self.branch_pending_items = upload_items;
+                Ok(response) => {
+                    let (branch, items) = response.take();
                     self.branch_pending_name = Some(branch);
+                    self.branch_pending_items = items;
                 }
                 Err(err) => {
                     dbg!(format!("Uh oh, {err}."));
