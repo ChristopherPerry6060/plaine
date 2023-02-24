@@ -62,8 +62,10 @@ pub fn write_upload_txt(entry_vec: Vec<Entry>, trunk: crate::Trunk) -> Result<Up
         };
     }
     if header != predicate {
-        let pw = parity_wordlist::random_phrase(1);
-        let upload_name = format!("{plan_name}-{pw}");
+        let branch_pre = parity_wordlist::random_phrase(1);
+        let branch_post = parity_wordlist::random_phrase(1);
+        let branch = format!("{branch_pre}-{branch_post}");
+        let upload_name = format!("{trunk}~{branch}");
         let path = PathBuf::from(format!("{upload_name}-Upload.txt"));
         std::fs::write(path, header).context("fs::write failed")?;
         Ok(UploadResponse::new(branch, entry_w_msku))
