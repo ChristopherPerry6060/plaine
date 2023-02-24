@@ -6,7 +6,7 @@ use super::*;
 #[derive(Default, Debug, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 #[allow(dead_code)]
-pub(super) struct AllListingReport {
+pub(super) struct AllListingsReport {
     #[serde(rename(deserialize = "seller-sku"))]
     pub(super) seller_sku: Option<String>,
     #[serde(rename(deserialize = "asin1"))]

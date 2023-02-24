@@ -1,6 +1,6 @@
 use crate::read::all_listings_report::Condition;
 
-use super::{all_listings_report::AllListingReport, MonthlyStorageFees};
+use super::{all_listings_report::AllListingsReport, MonthlyStorageFees};
 use anyhow::anyhow;
 use csv::StringRecord;
 
@@ -98,7 +98,7 @@ fn all_listings_report() -> anyhow::Result<()> {
         "B00BLQNYIC",
     ]);
 
-    let rd: AllListingReport = row1.deserialize(Some(&hdr))?;
+    let rd: AllListingsReport = row1.deserialize(Some(&hdr))?;
     let sku = rd.seller_sku.ok_or_else(|| anyhow!("deserde failed"))?;
     let asin = rd.asin.ok_or_else(|| anyhow!("deserde failed"))?;
     let condition = rd.item_condition;
