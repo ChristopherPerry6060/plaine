@@ -24,3 +24,5 @@ pub type Group = String;
 
 /// One of more [`Group`]s that are connected to describe an item's path.
 pub type Tree = String;
+
+pub type Branch = String;
