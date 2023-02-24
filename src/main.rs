@@ -46,12 +46,12 @@ fn main() {
 /// The Plaine application data.
 #[derive(Default, Debug)]
 pub struct Gui {
-    plan_name: Option<String>,
+    trunk: Option<String>,
     unselected: HashSet<String>,
     items: Vec<Entry>,
-    last_branch_name: Option<String>,
-    pending_branch: Vec<Entry>,
-    confirming_set_button: bool,
+    branch_pending_items: Option<String>,
+    branch_pending_name: Vec<Entry>,
+    confirm_branch_setting: bool,
     gd_plan_failed_upload: bool,
 }
 
@@ -115,7 +115,7 @@ impl Gui {
 
         if ui.button("Write Check File").clicked() {
             let items = self.items.clone();
-            let plan_name = self.plan_name.clone().unwrap_or_default();
+            let plan_name = self.trunk.clone().unwrap_or_default();
             plaine::write::write_check_file(items, plan_name).expect("File to write");
         };
 
@@ -127,11 +127,11 @@ impl Gui {
                 .filter(|x| !unselected.contains(x.get_fnsku()))
                 .collect();
 
-            let plan_name = self.plan_name.clone().unwrap_or_default();
+            let plan_name = self.trunk.clone().unwrap_or_default();
             match plaine::write::write_upload_txt(selected_items, plan_name) {
                 Ok((u_name, upload_items)) => {
-                    self.pending_branch = upload_items;
-                    self.last_branch_name = Some(u_name);
+                    self.branch_pending_name = upload_items;
+                    self.branch_pending_items = Some(u_name);
                 }
                 Err(err) => {
                     dbg!(format!("Uh oh, {err}."));
@@ -139,14 +139,14 @@ impl Gui {
             };
         };
 
-        if let Some(branch) = &self.last_branch_name {
+        if let Some(branch) = &self.branch_pending_items {
             let button_text = format!("Set the branch: {branch}?");
             if ui.button(button_text).clicked() {
-                self.confirming_set_button = true
+                self.confirm_branch_setting = true
             };
-            if self.confirming_set_button && ui.button("Are you sure?").clicked() {
+            if self.confirm_branch_setting && ui.button("Are you sure?").clicked() {
                 // TODO: This should show a warning about the error.
-                if let Ok(mut negatives) = self.try_write_branch(branch) {
+                if let Ok(mut negatives) = self.try_write_branch(Some(branch)) {
                     self.items.append(&mut negatives)
                 };
             };
@@ -234,7 +234,7 @@ impl Gui {
 impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         let name = self
-            .plan_name
+            .trunk
             .clone()
             .unwrap_or_else(|| String::from("Waiting on Upload :)"));
         CentralPanel::default().show(ctx, |ui| {
