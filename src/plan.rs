@@ -114,7 +114,7 @@ pub trait Plan {
     /// count those cases.
     ///
     /// This function is mostly used for internal records. You probably
-    /// want to use [`Self::positive_units_case_count`].
+    /// want to use [`Self::number_of_real_cases`].
     fn number_of_seen_cases(&self) -> usize {
         self.as_group_by_case().keys().count()
     }
@@ -416,8 +416,6 @@ mod tests {
 
         let plan = vec![entry1, entry2];
         let neg = plan.as_negated();
-        let _json = neg
-            .__serialize_dont_write("the-plan-name", "the-branch-name")
-            .unwrap_or_default();
+        let _json = neg.serialize().unwrap_or_default();
     }
 }
