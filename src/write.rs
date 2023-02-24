@@ -34,9 +34,12 @@ pub struct UploadResponse {
     items: Vec<Entry>,
 }
 impl UploadResponse {
+    /// Construct [`Self`] from a [`Branch`] and [`Entry`]s.
     fn new(branch: Branch, items: Vec<Entry>) -> Self {
         Self { branch, items }
     }
+
+    /// Take ownership of [`Self`], returning its fields as a tuple.
     pub fn take(self) -> (Branch, Vec<Entry>) {
         (self.branch, self.items)
     }
