@@ -1,4 +1,7 @@
-use crate::plan::{Entry, Plan};
+use crate::{
+    plan::{Entry, Plan},
+    Branch,
+};
 use anyhow::{anyhow, Context, Result};
 use std::path::PathBuf;
 
@@ -24,8 +27,22 @@ pub fn write_check_file(entry_vec: Vec<Entry>, plan_name: String) -> std::io::Re
     std::fs::write(path, contents)
 }
 
-pub type UploadResponse = Result<(String, Vec<Entry>)>;
-pub fn write_upload_txt(entry_vec: Vec<Entry>, plan_name: String) -> UploadResponse {
+/// [`Entry`](s) and their [`Branch`], as response from [`write_upload_txt`].
+#[derive(Default, Debug)]
+pub struct UploadResponse {
+    branch: Branch,
+    items: Vec<Entry>,
+}
+impl UploadResponse {
+    fn new(branch: Branch, items: Vec<Entry>) -> Self {
+        Self { branch, items }
+    }
+    pub fn take(self) -> (Branch, Vec<Entry>) {
+        (self.branch, self.items)
+    }
+}
+
+pub fn write_upload_txt(entry_vec: Vec<Entry>, trunk: crate::Trunk) -> Result<UploadResponse> {
     let mut header = std::fs::read_to_string(".local/upload.txt")?;
     let predicate = header.clone();
 
@@ -49,7 +66,7 @@ pub fn write_upload_txt(entry_vec: Vec<Entry>, plan_name: String) -> UploadRespo
         let upload_name = format!("{plan_name}-{pw}");
         let path = PathBuf::from(format!("{upload_name}-Upload.txt"));
         std::fs::write(path, header).context("fs::write failed")?;
-        Ok((upload_name, entry_w_msku))
+        Ok(UploadResponse::new(branch, entry_w_msku))
     } else {
         Err(anyhow!("Empty upload file"))
     }
