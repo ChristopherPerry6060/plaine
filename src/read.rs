@@ -154,13 +154,13 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
             item.set_total_pounds(found.weight);
             item.set_amz_size(found.product_size_tier.clone());
 
-            // These might not be very accurate, so don't overwrite
-            // what we already have.
             let amz_dims = [
                 found.longest_side.unwrap_or_default(),
                 found.median_side.unwrap_or_default(),
                 found.shortest_side.unwrap_or_default(),
             ];
+            // entry type has a separate field for input dims.
+            // doing this does not overwrite them.
             item.set_amz_dimensions(Some(amz_dims));
         };
         // AmzFbaInventory pulling.
