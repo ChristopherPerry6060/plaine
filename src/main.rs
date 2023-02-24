@@ -13,6 +13,21 @@ use plaine::{
 use rfd::FileDialog;
 use std::{collections::HashSet, path::PathBuf};
 
+/// [`Entry`](s) and their [`Trunk`], as response from [`Gui::gd_intake`].
+#[allow(dead_code)]
+#[derive(Default, Debug)]
+struct GdIntake {
+    trunk: plaine::Trunk,
+    items: Vec<Entry>,
+}
+impl GdIntake {
+    fn new(trunk: Trunk, items: Vec<Entry>) -> Self {
+        Self { trunk, items }
+    }
+    fn take(self) -> (Trunk, Vec<Entry>) {
+        (self.trunk, self.items)
+    }
+}
 
 fn main() {
     let native_options = NativeOptions {
@@ -37,6 +52,7 @@ pub struct Gui {
     last_branch_name: Option<String>,
     pending_branch: Vec<Entry>,
     confirming_set_button: bool,
+    gd_plan_failed_upload: bool,
 }
 
 impl Gui {
@@ -90,13 +106,11 @@ impl Gui {
         sums.sort_by_key(|i| i.get_fnsku().to_string());
 
         let mut unselected = self.unselected.clone();
+        let upload_button = ui.button("Upload");
 
-        if ui.button("Upload").clicked() {
-            let picked = Gui::show_file_diaglog();
-            if let Some(file) = picked {
-                self.items = plaine::read::GDrivePlan::proc_from_path(file).unwrap_or_default();
-                self.plan_name = Some(plaine::utils::gen_pw());
-            };
+        let picked = match upload_button.clicked() {
+            true => Gui::show_file_diaglog(),
+            false => None,
         };
 
         if ui.button("Write Check File").clicked() {
@@ -179,16 +193,40 @@ impl Gui {
                 };
             }
         });
+        let Some(file) = picked else {
+            return;
+        };
+
+        let Ok(intake) = Gui::gd_intake(file) else {
+            self.gd_intake_failed();
+            return;
+        };
+
+        self.items.clear();
+        let (trunk, mut items) = intake.take();
+        self.trunk = Some(trunk);
+        self.items.append(&mut items);
     }
 
-    fn try_write_branch(&self, branch: &str) -> Result<Vec<Entry>> {
-        let trunk_str = match &self.plan_name {
+    fn gd_intake_failed(&mut self) {
+        self.gd_plan_failed_upload = true;
+    }
+    fn gd_intake(file: PathBuf) -> Result<GdIntake> {
+        let plan = GDrivePlan::proc_from_path(file)?;
+        let trunk = gen_pw();
+        plan.serialize_to_fs(&trunk, None)?;
+        Ok(GdIntake::new(trunk, plan))
+    }
+
+    fn try_write_branch(&self, branch: Option<&str>) -> Result<Vec<Entry>> {
+        let trunk = match &self.trunk {
             Some(ref name) => name,
-            None => bail!("Trunk needs a name before setting branch"),
+            None => bail!("Can't branch without a trunk!"),
         };
-        let set = self.pending_branch.clone();
+
+        let set = self.branch_pending_name.clone();
         let negatives = set.as_negated();
-        let _ = set.serialize(trunk_str, branch)?;
+        let _ = set.serialize_to_fs(trunk, branch)?;
         Ok(negatives)
     }
 }
