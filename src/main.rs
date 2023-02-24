@@ -14,7 +14,6 @@ use rfd::FileDialog;
 use std::{collections::HashSet, path::PathBuf};
 
 /// [`Entry`](s) and their [`Trunk`], as response from [`Gui::gd_intake`].
-#[allow(dead_code)]
 #[derive(Default, Debug)]
 struct GdIntake {
     trunk: plaine::Trunk,
