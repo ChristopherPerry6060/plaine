@@ -8,28 +8,36 @@ use uuid::Uuid;
 pub trait Plan {
     fn entries(&self) -> Vec<Entry>;
 
-    fn __serialize_dont_write(
-        &self,
-        plan_name: &str,
-        branch_name: &str,
-    ) -> anyhow::Result<(String, String, String)> {
-        let branch = branch_name.to_owned();
-        let value = self.entries();
-        let json = serde_json::to_string_pretty(&value)?;
-        let full_name = format!("{plan_name}-{branch}");
-        let full_path = format!("/.local/{full_name}.json");
-        let resp = (json, full_name, full_path);
-        Ok(resp)
+    fn serialize_to_fs(&self, trunk: &str, branch: Option<&str>) -> Result<crate::TreeUuid> {
+        let tree = match branch {
+            Some(branch) => {
+                format!("{trunk}~{branch}")
+            }
+            None => {
+                trunk.to_string()
+            }
+        };
+
+        let uuid = Uuid::new_v4();
+        let tree_uuid = format!("{tree}~{uuid}");
+        let full_path = format!(".local/{tree_uuid}.json");
+        let json = self.serialize()?;
+
+        std::fs::write(full_path, json)?;
+        Ok(tree_uuid)
     }
 
-    fn serialize(&self, plan_name: &str, branch_name: &str) -> anyhow::Result<String> {
-        let branch = branch_name.to_owned();
+    /// Serialize [`Self`] into Json format.
+    ///
+    /// This function will return the full [`TreeJson`] and does not
+    /// write anything to the filesystem.
+    ///
+    /// See [Self::serialize_to_fs] for a version that writes to the local
+    /// directory.
+    fn serialize(&self) -> Result<TreeJson> {
         let value = self.entries();
         let json = serde_json::to_string_pretty(&value)?;
-        let full_name = format!("{plan_name}-{branch}");
-        let full_path = format!(".local/{full_name}.json");
-        std::fs::write(full_path, json).context("Serialization failed")?;
-        Ok(full_name)
+        Ok(json)
     }
 
     fn as_negated(&self) -> Vec<Entry> {
