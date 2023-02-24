@@ -53,8 +53,8 @@ pub struct Gui {
     trunk: Option<String>,
     unselected: HashSet<String>,
     items: Vec<Entry>,
-    branch_pending_items: Option<String>,
-    branch_pending_name: Vec<Entry>,
+    branch_pending_name: Option<String>,
+    branch_pending_items: Vec<Entry>,
     confirm_branch_setting: bool,
     gd_plan_failed_upload: bool,
 }
@@ -133,9 +133,9 @@ impl Gui {
 
             let plan_name = self.trunk.clone().unwrap_or_default();
             match plaine::write::write_upload_txt(selected_items, plan_name) {
-                Ok((u_name, upload_items)) => {
-                    self.branch_pending_name = upload_items;
-                    self.branch_pending_items = Some(u_name);
+                Ok((branch, upload_items)) => {
+                    self.branch_pending_items = upload_items;
+                    self.branch_pending_name = Some(branch);
                 }
                 Err(err) => {
                     dbg!(format!("Uh oh, {err}."));
@@ -143,7 +143,7 @@ impl Gui {
             };
         };
 
-        if let Some(branch) = &self.branch_pending_items {
+        if let Some(branch) = &self.branch_pending_name {
             let button_text = format!("Set the branch: {branch}?");
             if ui.button(button_text).clicked() {
                 self.confirm_branch_setting = true
@@ -228,7 +228,7 @@ impl Gui {
             None => bail!("Can't branch without a trunk!"),
         };
 
-        let set = self.branch_pending_name.clone();
+        let set = self.branch_pending_items.clone();
         let negatives = set.as_negated();
         let _ = set.serialize_to_fs(trunk, branch)?;
         Ok(negatives)
