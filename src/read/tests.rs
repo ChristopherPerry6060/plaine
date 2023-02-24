@@ -1,4 +1,7 @@
-use super::MonthlyStorageFees;
+use crate::read::all_listings_report::Condition;
+
+use super::{all_listings_report::AllListingReport, MonthlyStorageFees};
+use anyhow::anyhow;
 use csv::StringRecord;
 
 #[test]
@@ -72,5 +75,36 @@ fn monthly_storage_fees() -> anyhow::Result<()> {
     assert_eq!(de.product_size_tier, Some(pst));
     assert_eq!(de.product_name, Some(pn));
     assert_eq!(de.asin, Some(asin));
+    Ok(())
+}
+
+#[test]
+fn all_listings_report() -> anyhow::Result<()> {
+    let hdr = StringRecord::from(vec![
+        "seller-sku",
+        "asin1",
+        "item-name",
+        "product-id-type",
+        "item-condition",
+        "product-id",
+    ]);
+
+    let row1 = StringRecord::from(vec![
+        "mon0000000003_udf",
+        "B00000NYIC",
+        "BDI Bink 1025 Mobile Media Table, Salt",
+        "1",
+        "11",
+        "B00BLQNYIC",
+    ]);
+
+    let rd: AllListingReport = row1.deserialize(Some(&hdr))?;
+    let sku = rd.seller_sku.ok_or_else(|| anyhow!("deserde failed"))?;
+    let asin = rd.asin.ok_or_else(|| anyhow!("deserde failed"))?;
+    let condition = rd.item_condition;
+
+    assert_eq!(sku, "mon0000000003_udf");
+    assert_eq!(asin, "B00000NYIC");
+    assert_eq!(condition, Condition::New);
     Ok(())
 }

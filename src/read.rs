@@ -3,6 +3,7 @@ mod tests;
 
 use crate::plan::Entry;
 use crate::utils::gen_pw_uuid;
+mod all_listings_report;
 use anyhow::{anyhow, bail, Error, Result};
 use std::path::Path;
 
