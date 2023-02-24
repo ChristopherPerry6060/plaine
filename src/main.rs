@@ -20,10 +20,14 @@ struct GdIntake {
     trunk: plaine::Trunk,
     items: Vec<Entry>,
 }
+
 impl GdIntake {
+    /// Create a new [`Self`] from a [`Trunk`] and [`Entry`].
     fn new(trunk: Trunk, items: Vec<Entry>) -> Self {
         Self { trunk, items }
     }
+
+    /// Take ownership of [`Self`].
     fn take(self) -> (Trunk, Vec<Entry>) {
         (self.trunk, self.items)
     }
