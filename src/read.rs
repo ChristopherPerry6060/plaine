@@ -8,6 +8,7 @@ use anyhow::{anyhow, bail, Error, Result};
 use serde::Deserialize;
 use std::path::Path;
 
+use self::all_listings_report::AllListingsReport;
 // Monthly Storage Fees report.
 #[derive(serde::Deserialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
@@ -145,6 +146,12 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
         .flatten()
         .collect::<Vec<_>>();
 
+    let alr_vec = std::fs::read_dir(".local")?
+        .filter_map(|x| x.ok())
+        .filter_map(|x| AllListingsReport::from_path(x.path()).ok())
+        .flatten()
+        .collect::<Vec<_>>();
+
     for item in entries {
         // MonthlyStorageFees pulling.
         if let Some(found) = msf_vec.iter().find(|row| row.fnsku == item.get_fnsku()) {
@@ -169,6 +176,13 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
             let condition = found.condition.clone();
             item.set_msku(Some(msku));
             item.set_condition(Some(condition));
+        };
+
+        if let Some(found) = alr_vec.iter().find(|row| &row.seller_sku == item.get_msku()) {
+            let title = found.item_name.clone();
+            let upc = found.product_id.clone();
+            item.set_title(title);
+            item.set_upc(upc);
         };
     }
     Ok(())
