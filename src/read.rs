@@ -3,12 +3,12 @@ mod tests;
 
 mod all_listings_report;
 
-use serde::Deserialize;
 use crate::{plan::Entry, utils::gen_pw_uuid};
 use anyhow::{anyhow, bail, Error, Result};
+use serde::Deserialize;
 use std::path::Path;
 
-// Monthly storage fees.
+// Monthly Storage Fees report.
 #[derive(serde::Deserialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct MonthlyStorageFees {
@@ -67,6 +67,7 @@ pub struct MonthlyStorageFees {
     #[serde(alias = "average_quantity_customer_orders")]
     _average_quantity_customer_orders: Option<String>,
 }
+
 impl MonthlyStorageFees {
     fn from_path<P>(path: P) -> Result<Vec<MonthlyStorageFees>, csv::Error>
     where
@@ -83,9 +84,7 @@ impl MonthlyStorageFees {
     }
 }
 
-/// Made from the report that is located [here].
-///
-/// [here](https://sellercentral.amazon.com/reportcentral/AFNInventoryReport/1).
+/// Amazon Fba Inventory report.
 #[derive(serde::Deserialize, Debug, Default, Clone)]
 pub struct AmzFbaInventory {
     #[serde(alias = "seller-sku")]
@@ -101,6 +100,7 @@ pub struct AmzFbaInventory {
     #[serde(alias = "Quantity Available")]
     _available: String,
 }
+
 impl AmzFbaInventory {
     fn from_path<P>(path: P) -> anyhow::Result<Vec<AmzFbaInventory>>
     where
@@ -122,11 +122,13 @@ impl AmzFbaInventory {
     }
 }
 
-/// Mutate `entries` in place through lookup in the `.local` directory.
+/// Mutate `Entry` in place through lookup in the `.local` directory.
 ///
-/// See:
+/// See the following for more information:
 /// * [`AmzFbaInventory`]
 /// * [`MonthlyStorageFees`]
+/// * [`AllListingsReport`]
+///
 fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
     let afi_vec = std::fs::read_dir(".local")?
         .filter_map(|x| x.ok())
@@ -169,7 +171,7 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
     Ok(())
 }
 
-/// From the "shipping plans" within Google Drive.
+/// See [`GDrivePlan`].
 #[derive(Default, serde::Serialize, serde::Deserialize, Debug)]
 struct GDriveEntry {
     #[serde(alias = "Info")]
@@ -204,10 +206,17 @@ struct GDriveEntry {
     _readable: Option<String>,
 }
 
+/// A batch of entries held withing a Google Drive sheet.
+///
+/// [`Self`] is composed of a single field of `Vec<Entry>`.
+/// Commonly referred to as a "shipping plan". This structure and method
+/// of plan creation is due for deprecation.
+///
 #[derive(Default, Debug)]
 pub struct GDrivePlan {
     helper: Vec<GDriveEntry>,
 }
+
 impl GDrivePlan {
     pub fn proc_from_path<P>(path: P) -> Result<Vec<Entry>>
     where
@@ -255,6 +264,7 @@ impl TryFrom<GDrivePlan> for Vec<Entry> {
         Ok(conversions)
     }
 }
+
 impl TryFrom<GDriveEntry> for Vec<Entry> {
     type Error = anyhow::Error;
 
