@@ -122,13 +122,16 @@ impl AmzFbaInventory {
     }
 }
 
-/// Mutate `Entry` in place through lookup in the `.local` directory.
+/// Add item information to [`Entry`]s, by mutating in place.
 ///
 /// See the following for more information:
 /// * [`AmzFbaInventory`]
 /// * [`MonthlyStorageFees`]
 /// * [`AllListingsReport`]
 ///
+/// [`AllListingsReport`]:(all_listings_report::AllListingsReport)
+/// [`AmzFbaInventory`]:(AmzFbaInventory)
+/// [`MonthlyStorageFees`]:(MonthlyStorageFees)
 fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
     let afi_vec = std::fs::read_dir(".local")?
         .filter_map(|x| x.ok())
