@@ -1,11 +1,18 @@
 #![windows_subsystem = "windows"]
 use anyhow::{bail, Result};
-use eframe::egui::{self, CentralPanel, Grid, Ui, Window};
-use eframe::{NativeOptions, Theme};
-use plaine::plan::{Entry, Plan};
+use eframe::{
+    egui::{self, CentralPanel, Grid, Ui, Window},
+    NativeOptions, Theme,
+};
+use plaine::{
+    plan::{Entry, Plan},
+    read::GDrivePlan,
+    utils::gen_pw,
+    Trunk,
+};
 use rfd::FileDialog;
-use std::collections::HashSet;
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
+
 
 fn main() {
     let native_options = NativeOptions {
