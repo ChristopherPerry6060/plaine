@@ -1,3 +1,5 @@
+use std::u8;
+use csv::StringRecord;
 use super::*;
 
 /// Representation of the All Listings Report (Custom).
@@ -20,6 +22,41 @@ pub(super) struct AllListingsReport {
     pub(super) item_condition: Condition,
     #[serde(rename(deserialize = "product-id"))]
     pub(super) product_id: Option<String>,
+}
+impl AllListingsReport {
+    /// Attempt to deserialize from a path.
+    ///
+    /// # Errors
+    ///
+    /// * The supplied path is invalid.
+    /// * Deserialization fails.
+    pub fn from_path<P>(path: P) -> anyhow::Result<Vec<AllListingsReport>>
+    where
+        P: AsRef<Path>,
+    {
+        // Set the delimiter to a tab char.
+        let mut rdr = csv::ReaderBuilder::new().delimiter(b'\t').from_path(path)?;
+        let expect_hdr = StringRecord::from(vec![
+            "seller-sku",
+            "asin1",
+            "item-name",
+            "product-id-type",
+            "item-condition",
+            "product-id",
+        ]);
+
+        let hdr = rdr.headers()? ;
+        if  hdr != &expect_hdr {
+            return Err(anyhow!("Expected{expect_hdr:#?}, got {hdr:#?}"));
+        };
+        let alr = rdr
+            .records()
+            .filter_map(|x| x.ok())
+            .map(|x| dbg!(x.deserialize(None)))
+            .filter_map(|x| x.ok())
+            .collect::<Vec<AllListingsReport>>();
+        Ok(alr)
+    }
 }
 
 /// Product conditions for an Asin.
