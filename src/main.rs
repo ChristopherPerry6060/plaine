@@ -5,13 +5,14 @@ mod instruct;
 
 use anyhow::{bail, Result};
 use eframe::{
-    egui::{self, Grid, Ui, Window, CentralPanel},
-    NativeOptions, Theme, emath::Align2,
+    egui::{self, CentralPanel, Grid, TopBottomPanel, Ui, Window},
+    emath::Align2,
+    NativeOptions, Theme,
 };
 use plaine::{
     plan::{Entry, Plan},
     read::GDrivePlan,
-    utils::{gen_pw, TrunkFileName},
+    utils::{self, gen_pw, TrunkFileName},
 };
 use rfd::FileDialog;
 use std::{collections::HashSet, path::PathBuf};
@@ -30,13 +31,44 @@ fn main() {
     .expect("eframe init to succeed");
 }
 
+/// The configurations available to [`Gui`].
+///
+/// # Fields
+/// * `relative_trunk_path`: "\[Binary Root\]/.local/"
+///
+/// [`Gui`]:(crate::Gui)
+#[derive(Debug, Clone)]
+struct GuiConfig {
+    relative_trunk_path: PathBuf,
+}
+
+impl Default for GuiConfig {
+    fn default() -> Self {
+        let relative_trunk_path = PathBuf::from(".local/");
+        Self {
+            relative_trunk_path,
+        }
+    }
+}
+
+impl GuiConfig {
+    /// Return a relative `Path` to [`Trunk`] storage.
+    ///
+    /// [Trunk]:(crate::Trunk)
+    fn relative_trunk_path(&self) -> &std::path::Path {
+        &self.relative_trunk_path
+    }
+}
+
 /// The Plaine application data.
 #[derive(Default, Debug)]
 pub struct Gui {
     _gd_plan_failed_upload: bool,
     branch_pending_items: Vec<Entry>,
     branch_pending_name: Option<String>,
+    config: GuiConfig,
     confirm_branch_setting: bool,
+    error_stack: Vec<String>,
     items: Vec<Entry>,
     trunk: Option<String>,
     trunk_store: Vec<TrunkFileName>,
@@ -44,6 +76,41 @@ pub struct Gui {
 }
 
 impl Gui {
+    /// A component displaying all available [`Trunk`]s and [`Branch`]s.
+    fn comp_trunks_branches_list(&mut self, ui: &mut Ui) {
+        // When a refresh is requested, load up records
+        if ui.button("Refresh").clicked() {
+            let path = self.config.relative_trunk_path();
+            if let Ok(trunks) = utils::gather_records(path) {
+                self.trunk_store = trunks;
+            };
+        };
+
+        Grid::new("comp_trunks_branches_list_grid")
+            .num_columns(5)
+            .show(ui, |ui| {
+                ui.label("Name");
+                ui.label("Status");
+                ui.label("Select");
+                ui.label("Note");
+                ui.label("Actions");
+                ui.end_row();
+                let splits = self
+                    .trunk_store
+                    .iter()
+                    .filter_map(|trunk_name| trunk_name.split_once('_'));
+                splits.for_each(|split| {
+                    let (name, _id) = split;
+                    ui.label(name);
+                    ui.label(name);
+                    ui.small_button("Select");
+                    ui.label("Notes");
+                    ui.small_button("Menus");
+                    ui.end_row();
+                });
+            });
+    }
+
     /// Return a default instance.
     pub fn new(_: &eframe::CreationContext<'_>) -> Self {
         Self::default()
