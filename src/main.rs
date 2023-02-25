@@ -4,6 +4,7 @@ use eframe::{
     egui::{self, CentralPanel, Grid, Ui, Window},
     NativeOptions, Theme,
 };
+
 use plaine::{
     plan::{Entry, Plan},
     read::GDrivePlan,
@@ -232,6 +233,7 @@ impl Gui {
             });
     }
 }
+
 
 impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
