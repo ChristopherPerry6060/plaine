@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use crate::TreeJson;
+use std::collections::HashMap;
 
 use anyhow::Result;
 use uuid::Uuid;
-
 
 pub trait Plan {
     fn entries(&self) -> Vec<Entry>;
@@ -13,9 +12,7 @@ pub trait Plan {
             Some(branch) => {
                 format!("{trunk}~{branch}")
             }
-            None => {
-                trunk.to_string()
-            }
+            None => trunk.to_string(),
         };
 
         let uuid = Uuid::new_v4();
