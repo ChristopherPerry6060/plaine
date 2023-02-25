@@ -1,7 +1,7 @@
-pub mod read;
-pub mod write;
 pub mod plan;
+pub mod read;
 pub mod utils;
+pub mod write;
 
 /// A [`Tree`] that has been serialized to a Json string.
 pub type TreeJson = String;
