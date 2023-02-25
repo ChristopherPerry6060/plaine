@@ -16,25 +16,6 @@ use plaine::{
 use rfd::FileDialog;
 use std::{collections::HashSet, path::PathBuf};
 
-/// [`Entry`](s) and their [`Trunk`], as response from [`Gui::gd_intake`].
-#[derive(Default, Debug)]
-struct GdIntake {
-    trunk: plaine::Trunk,
-    items: Vec<Entry>,
-}
-
-impl GdIntake {
-    /// Create a new [`Self`] from a [`Trunk`] and [`Entry`].
-    fn new(trunk: Trunk, items: Vec<Entry>) -> Self {
-        Self { trunk, items }
-    }
-
-    /// Take ownership of [`Self`].
-    fn take(self) -> (Trunk, Vec<Entry>) {
-        (self.trunk, self.items)
-    }
-}
-
 fn main() {
     let native_options = NativeOptions {
         follow_system_theme: false,
@@ -58,7 +39,7 @@ pub struct Gui {
     branch_pending_name: Option<String>,
     branch_pending_items: Vec<Entry>,
     confirm_branch_setting: bool,
-    gd_plan_failed_upload: bool,
+    _gd_plan_failed_upload: bool,
 }
 
 impl Gui {
@@ -68,13 +49,7 @@ impl Gui {
     }
 
     fn main_window(&mut self, ui: &mut Ui) {
-        let unselected = self.unselected.clone();
-        let upload_button = ui.button("Upload");
-
-        let picked = match upload_button.clicked() {
-            true => Gui::show_file_diaglog(),
-            false => None,
-        };
+        self.button_gd_upload(ui);
 
         if ui.button("Write Check File").clicked() {
             let items = self.items.clone();
@@ -83,6 +58,7 @@ impl Gui {
         };
 
         if ui.button("Write Upload File").clicked() {
+            let unselected = self.unselected.clone();
             let selected_items = self.items.filter_fnskus(unselected.into_iter());
 
             let plan_name = self.trunk.clone().unwrap_or_default();
@@ -114,29 +90,29 @@ impl Gui {
         Grid::new("buttons").striped(true).show(ui, |ui| {
             self.fill_grid(ui);
         });
-        let Some(file) = picked else {
+    }
+
+    fn button_gd_upload(&mut self, ui: &mut Ui) {
+        if !ui.button("Upload").clicked() {
             return;
         };
 
-        let Ok(intake) = Gui::gd_intake(file) else {
-            self.gd_intake_failed();
+        let Some(file_picker) = FileDialog::new().pick_file() else {
             return;
         };
 
-        self.items.clear();
-        let (trunk, mut items) = intake.take();
-        self.trunk = Some(trunk);
-        self.items.append(&mut items);
+        if let Ok(mut items) = self.try_upload_proc(file_picker) {
+            self.items.append(&mut items)
+        };
     }
 
-    fn gd_intake_failed(&mut self) {
-        self.gd_plan_failed_upload = true;
-    }
-    fn gd_intake(file: PathBuf) -> Result<GdIntake> {
-        let plan = GDrivePlan::proc_from_path(file)?;
+    fn try_upload_proc(&mut self, picked: PathBuf) -> Result<Vec<Entry>> {
+        let items = GDrivePlan::proc_from_path(picked)?;
         let trunk = gen_pw();
-        plan.serialize_to_fs(&trunk, None)?;
-        Ok(GdIntake::new(trunk, plan))
+        items.serialize_to_fs(&trunk, None)?;
+        self.items.clear();
+        self.trunk = Some(trunk);
+        Ok(items)
     }
 
     fn try_write_branch(&self, branch: Option<&str>) -> Result<Vec<Entry>> {
@@ -170,7 +146,6 @@ impl Gui {
         sums.into_iter()
             .filter(|entry| *entry.get_units() > 0)
             .for_each(|entry| {
-
                 let fnsku = entry.get_fnsku();
                 // When the fnsku is NOT in the map, display check.
                 let mut check = !un_set.contains(fnsku);
@@ -195,7 +170,6 @@ impl Gui {
             });
     }
 }
-
 
 impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
