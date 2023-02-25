@@ -2,6 +2,7 @@ pub mod read;
 pub mod write;
 pub mod plan;
 pub mod utils;
+
 /// A [`Tree`] that has been serialized to a Json string.
 pub type TreeJson = String;
 
@@ -25,3 +26,6 @@ pub type Group = String;
 pub type Tree = String;
 
 pub type Branch = String;
+
+/// An owned Fulfillment Network Sku
+pub type Fnsku = String;
