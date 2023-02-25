@@ -10,7 +10,7 @@ use eframe::{
 use plaine::{
     plan::{Entry, Plan},
     read::GDrivePlan,
-    utils::gen_pw,
+    utils::{gen_pw, TrunkFileName},
 };
 use rfd::FileDialog;
 use std::{collections::HashSet, path::PathBuf};
@@ -32,13 +32,14 @@ fn main() {
 /// The Plaine application data.
 #[derive(Default, Debug)]
 pub struct Gui {
-    trunk: Option<String>,
-    unselected: HashSet<String>,
-    items: Vec<Entry>,
-    branch_pending_name: Option<String>,
-    branch_pending_items: Vec<Entry>,
-    confirm_branch_setting: bool,
     _gd_plan_failed_upload: bool,
+    branch_pending_items: Vec<Entry>,
+    branch_pending_name: Option<String>,
+    confirm_branch_setting: bool,
+    items: Vec<Entry>,
+    trunk: Option<String>,
+    trunk_store: Vec<TrunkFileName>,
+    unselected: HashSet<String>,
 }
 
 impl Gui {
