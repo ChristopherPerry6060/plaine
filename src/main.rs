@@ -105,10 +105,7 @@ impl Gui {
         ui.label("Click on 'Write Check File'");
     }
     fn main_window(&mut self, ui: &mut Ui) {
-        let mut sums = self.items.clone().get_as_sums();
-        sums.sort_by_key(|i| i.get_fnsku().to_string());
-
-        let mut unselected = self.unselected.clone();
+        let unselected = self.unselected.clone();
         let upload_button = ui.button("Upload");
 
         let picked = match upload_button.clicked() {
@@ -157,45 +154,7 @@ impl Gui {
         };
 
         Grid::new("buttons").striped(true).show(ui, |ui| {
-            ui.label("");
-            ui.label("msku");
-            ui.label("Fnsku");
-            ui.label("Units");
-            ui.label("Amz Size");
-            ui.label("Title");
-            ui.end_row();
-
-            for entry in sums {
-                if entry.get_units() == &0 {
-                    continue;
-                };
-                // Prep strings
-                let amz_size = entry.get_amz_size().clone().unwrap_or_default();
-                let fnsku = entry.get_fnsku();
-                let msku = entry.get_msku().clone().unwrap_or_default();
-                let title = entry.get_title().clone().unwrap_or_default();
-                let _asin = entry.get_asin().clone().unwrap_or_default();
-                let units = entry.get_units().to_string();
-                let _total_pounds = entry.get_total_pounds().unwrap_or_default();
-                let _id = entry.get_id();
-                let _upc = entry.get_upc().clone().unwrap_or_default();
-
-                // Inverse the set since the default state is selected.
-                let mut unchecked = !unselected.contains(fnsku);
-                ui.checkbox(&mut unchecked, "");
-                ui.label(msku);
-                ui.label(fnsku);
-                ui.label(units);
-                ui.label(amz_size);
-                ui.label(title);
-                ui.end_row();
-
-                if !unchecked {
-                    unselected.insert(fnsku.to_string());
-                } else {
-                    unselected.remove(fnsku);
-                };
-            }
+            self.fill_grid(ui);
         });
         let Some(file) = picked else {
             return;
@@ -232,6 +191,50 @@ impl Gui {
         let negatives = set.as_negated();
         let _ = set.serialize_to_fs(trunk, branch)?;
         Ok(negatives)
+    }
+
+    /// Fill the Ui with a grid, displaying sums of the passed entries.
+    fn fill_grid(&mut self, ui: &mut Ui) {
+        let mut sums = self.items.clone().get_as_sums();
+        sums.sort_by_key(|i| i.get_fnsku().to_string());
+        let un_set = &mut self.unselected;
+
+        ui.label("");
+        ui.label("mSku");
+        ui.label("Upc*");
+        ui.label("Fnsku");
+        ui.label("Units");
+        ui.label("Amz Size");
+        ui.label("Condition");
+        ui.label("Title");
+        ui.end_row();
+
+        sums.into_iter()
+            .filter(|entry| *entry.get_units() > 0)
+            .for_each(|entry| {
+
+                let fnsku = entry.get_fnsku();
+                // When the fnsku is NOT in the map, display check.
+                let mut check = !un_set.contains(fnsku);
+                ui.checkbox(&mut check, "");
+
+                ui.label(entry.str_msku());
+                ui.label(entry.str_upc());
+                ui.label(entry.str_fnsku());
+                ui.label(entry.get_units().to_string());
+                ui.label(entry.str_amz_size());
+                ui.label(entry.str_condition());
+                ui.label(entry.str_title());
+                ui.end_row();
+
+                // When the fnsku is NOT checked, insert.
+                // When check, remove.
+                if !check {
+                    un_set.insert(fnsku.to_owned());
+                } else {
+                    un_set.remove(fnsku);
+                };
+            });
     }
 }
 
