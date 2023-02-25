@@ -24,7 +24,7 @@ pub fn gen_pw() -> String {
 /// A `String` which represents the path to a serialized [`Trunk`].
 ///
 /// [`Trunk`]:(plaine::Trunk)
-type TrunkFileName = String;
+pub type TrunkFileName = String;
 
 /// Returns [`TrunkFileName`]s within the given `path`.
 ///
