@@ -31,6 +31,35 @@ fn main() {
     .expect("eframe init to succeed");
 }
 
+impl eframe::App for Gui {
+    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        let name = self
+            .trunk
+            .clone()
+            .unwrap_or_else(|| String::from("Waiting on Upload"));
+        CentralPanel::default().show(ctx, |ui| {
+            if ui.button("Reset App").clicked() {
+                *self = Gui::default();
+            };
+            Window::new("Branches & Trunks")
+                .vscroll(true)
+                .hscroll(true)
+                .pivot(Align2::LEFT_TOP)
+                .show(ctx, |ui| self.comp_trunks_branches_list(ui));
+            Window::new("Instruction").show(ctx, |ui| {
+                instruct::instruction_window(ui);
+            });
+            Window::new(name)
+                .vscroll(true)
+                .hscroll(true)
+                .pivot(Align2::RIGHT_TOP)
+                .show(ctx, |ui| {
+                    self.main_window(ui);
+                });
+        });
+    }
+}
+
 /// The configurations available to [`Gui`].
 ///
 /// # Fields
@@ -236,29 +265,5 @@ impl Gui {
                     un_set.remove(fnsku);
                 };
             });
-    }
-}
-
-impl eframe::App for Gui {
-    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
-        let name = self
-            .trunk
-            .clone()
-            .unwrap_or_else(|| String::from("Waiting on Upload :)"));
-        CentralPanel::default().show(ctx, |ui| {
-            if ui.button("Reset App").clicked() {
-                *self = Gui::default();
-            };
-            Window::new("Instruction").show(ctx, |ui| {
-                instruct::instruction_window(ui);
-            });
-            Window::new(name)
-                .vscroll(true)
-                .hscroll(true)
-                .pivot(Align2::RIGHT_TOP)
-                .show(ctx, |ui| {
-                    self.main_window(ui);
-                });
-        });
     }
 }
