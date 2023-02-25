@@ -27,7 +27,11 @@ pub fn write_check_file(entry_vec: Vec<Entry>, plan_name: String) -> std::io::Re
     std::fs::write(path, contents)
 }
 
-/// [`Entry`](s) and their [`Branch`], as response from [`write_upload_txt`].
+/// [`Entry`]s and their [`Branch`], as response from [`write_upload_txt`].
+///
+/// [`Entry`]:(Entry)
+/// [`Branch`]:(Branch)
+/// [write_upload_txt]:(write_upload_txt)
 #[derive(Default, Debug)]
 pub struct UploadResponse {
     branch: Branch,
@@ -35,6 +39,9 @@ pub struct UploadResponse {
 }
 impl UploadResponse {
     /// Construct [`Self`] from a [`Branch`] and [`Entry`]s.
+    ///
+    /// [`Entry`]:(Entry)
+    /// [`Branch`]:(Branch)
     fn new(branch: Branch, items: Vec<Entry>) -> Self {
         Self { branch, items }
     }

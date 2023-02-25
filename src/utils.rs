@@ -1,4 +1,3 @@
-//! Internal utilities for convenience.
 use anyhow::Result;
 use parity_wordlist::random_phrase;
 use std::path::Path;
@@ -22,7 +21,19 @@ pub fn gen_pw() -> String {
     format!("{word}-{word2}")
 }
 
+/// A `String` which represents the path to a serialized [`Trunk`].
+///
+/// [`Trunk`]:(plaine::Trunk)
 type TrunkFileName = String;
+
+/// Returns [`TrunkFileName`]s within the given `path`.
+///
+/// # Errors
+///
+/// The underlying file system fails at reading the given path.
+///
+/// [`TrunkFileName`]:(TrunkFileName)
+/// [`Trunk`]:(plaine::Trunk)
 pub fn gather_records<P>(path: P) -> Result<Vec<TrunkFileName>>
 where
     P: AsRef<Path>,
@@ -35,4 +46,3 @@ where
         .collect::<Vec<_>>();
     Ok(strings)
 }
-
