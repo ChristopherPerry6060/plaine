@@ -1,9 +1,8 @@
 //! Internal utilities for convenience.
-use std::{collections::HashSet, path::Path};
 use anyhow::Result;
 use parity_wordlist::random_phrase;
+use std::path::Path;
 
-use crate::Trunk;
 /// Generate a phrase with two parity words and a Uuid, delimited by a '-'.
 ///
 /// See [`gen_pw`] for a version without the Uuid.
