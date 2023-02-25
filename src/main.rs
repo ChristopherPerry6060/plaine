@@ -1,11 +1,12 @@
 #![windows_subsystem = "windows"]
+
 mod instruct;
+
 use anyhow::{bail, Result};
 use eframe::{
-    egui::{self, CentralPanel, Grid, Ui, Window},
-    NativeOptions, Theme,
+    egui::{self, Grid, Ui, Window, CentralPanel},
+    NativeOptions, Theme, emath::Align2,
 };
-
 use plaine::{
     plan::{Entry, Plan},
     read::GDrivePlan,
