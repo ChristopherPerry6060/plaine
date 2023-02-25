@@ -33,7 +33,7 @@ pub trait Plan {
         };
 
         let uuid = Uuid::new_v4();
-        let tree_uuid = format!("{tree}~{uuid}");
+        let tree_uuid = format!("{tree}_{uuid}");
         let full_path = format!(".local/{tree_uuid}.json");
         let json = self.serialize()?;
 
