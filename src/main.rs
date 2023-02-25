@@ -58,7 +58,7 @@ impl Gui {
 
         if ui.button("Write Upload File").clicked() {
             let unselected = self.unselected.clone();
-            let selected_items = self.items.filter_fnskus(unselected.into_iter());
+            let selected_items = self.items.remove_fnskus(unselected.into_iter());
 
             let plan_name = self.trunk.clone().unwrap_or_default();
             match plaine::write::write_upload_txt(selected_items, plan_name) {

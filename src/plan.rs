@@ -19,7 +19,8 @@ pub trait Plan {
         let pre = i.into_iter().collect::<HashSet<_>>();
         self.entries()
             .into_iter()
-            .filter(|x| pre.contains(x.get_fnsku()))
+            // i is list of items to remove
+            .filter(|x| !pre.contains(x.get_fnsku()))
             .collect()
     }
 
