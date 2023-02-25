@@ -310,6 +310,50 @@ impl Entry {
             .expect("vec made from [f32;3] can be popped 3 times.");
         self.amz_dimensions = Some([l as f32, w as f32, h as f32]);
     }
+
+    pub fn str_amz_size(&self) -> &str {
+        match &self.amz_size {
+            Some(x) => x,
+            None => "",
+        }
+    }
+    pub fn str_fnsku(&self) -> &str {
+        &self.fnsku
+    }
+    pub fn str_msku(&self) -> &str {
+        match &self.msku {
+            Some(x) => x,
+            None => "",
+        }
+    }
+    pub fn str_title(&self) -> &str {
+        match &self.title {
+            Some(x) => x,
+            None => "",
+        }
+    }
+    pub fn str_asin(&self) -> &str {
+        match &self.asin {
+            Some(x) => x,
+            None => "",
+        }
+    }
+    pub fn str_condition(&self) -> &str {
+        match &self.condition {
+            Some(x) => x,
+            None => "",
+        }
+    }
+    pub fn str_id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn str_upc(&self) -> &str {
+        match &self.upc {
+            Some(x) => x,
+            None => "",
+        }
+    }
 }
 
 #[cfg(test)]
