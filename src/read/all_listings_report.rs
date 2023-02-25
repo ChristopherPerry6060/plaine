@@ -52,7 +52,7 @@ impl AllListingsReport {
         let alr = rdr
             .records()
             .filter_map(|x| x.ok())
-            .map(|x| dbg!(x.deserialize(None)))
+            .map(|x| x.deserialize(None))
             .filter_map(|x| x.ok())
             .collect::<Vec<AllListingsReport>>();
         Ok(alr)
