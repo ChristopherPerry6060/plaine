@@ -11,7 +11,6 @@ use plaine::{
     plan::{Entry, Plan},
     read::GDrivePlan,
     utils::gen_pw,
-    Trunk,
 };
 use rfd::FileDialog;
 use std::{collections::HashSet, path::PathBuf};
@@ -182,11 +181,15 @@ impl eframe::App for Gui {
                 *self = Gui::default();
             };
             Window::new("Instruction").show(ctx, |ui| {
-                self.instruction_window(ui);
+                instruct::instruction_window(ui);
             });
-            Window::new(name).show(ctx, |ui| {
-                self.main_window(ui);
-            });
+            Window::new(name)
+                .vscroll(true)
+                .hscroll(true)
+                .pivot(Align2::RIGHT_TOP)
+                .show(ctx, |ui| {
+                    self.main_window(ui);
+                });
         });
     }
 }
