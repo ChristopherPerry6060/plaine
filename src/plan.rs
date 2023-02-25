@@ -1,4 +1,4 @@
-use crate::TreeJson;
+use crate::{Fnsku, TreeJson};
 use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -6,10 +6,15 @@ use uuid::Uuid;
 pub trait Plan {
     fn entries(&self) -> Vec<Entry>;
 
-    /// Takes an iterator of `&str` as Fnsku, clones [`Self`], returning the clone.
-    fn filter_fnskus<I>(&self, i: I) -> Vec<Entry>
+    /// Returns a clone of [`Self`] without the provided [`Fnsku`]s.
+    ///
+    /// When [`Self`] does not contain any of the provided Fnsku, this is
+    /// just returning [`Self`] cloned and unchanged.
+    ///
+    /// [Fnksu]: (plaine::Fnsku)
+    fn remove_fnskus<I>(&self, i: I) -> Vec<Entry>
     where
-        I: IntoIterator<Item = String>,
+        I: IntoIterator<Item = Fnsku>,
     {
         let pre = i.into_iter().collect::<HashSet<_>>();
         self.entries()
