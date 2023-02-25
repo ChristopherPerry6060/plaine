@@ -1,11 +1,24 @@
 use crate::TreeJson;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
+use eframe::egui::TextBuffer;
 use uuid::Uuid;
 
 pub trait Plan {
     fn entries(&self) -> Vec<Entry>;
+
+    /// Takes an iterator of `&str` as Fnsku, clones [`Self`], returning the clone.
+    fn filter_fnskus<I>(&self, i: I) -> Vec<Entry>
+    where
+        I: IntoIterator<Item = String>,
+    {
+        let pre = i.into_iter().collect::<HashSet<_>>();
+        self.entries()
+            .into_iter()
+            .filter(|x| pre.contains(x.get_fnsku()))
+            .collect()
+    }
 
     fn serialize_to_fs(&self, trunk: &str, branch: Option<&str>) -> Result<crate::TreeUuid> {
         let tree = match branch {

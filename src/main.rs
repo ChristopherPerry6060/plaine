@@ -120,12 +120,7 @@ impl Gui {
         };
 
         if ui.button("Write Upload File").clicked() {
-            let items = self.items.clone();
-
-            let selected_items: Vec<_> = items
-                .into_iter()
-                .filter(|x| !unselected.contains(x.get_fnsku()))
-                .collect();
+            let selected_items = self.items.filter_fnskus(unselected.into_iter());
 
             let plan_name = self.trunk.clone().unwrap_or_default();
             match plaine::write::write_upload_txt(selected_items, plan_name) {
