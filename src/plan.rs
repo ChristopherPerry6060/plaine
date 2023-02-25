@@ -1,8 +1,6 @@
 use crate::TreeJson;
-use std::collections::{HashMap, HashSet};
-
 use anyhow::Result;
-use eframe::egui::TextBuffer;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 pub trait Plan {
