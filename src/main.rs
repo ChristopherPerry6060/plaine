@@ -2,17 +2,16 @@
 #![allow(dead_code)]
 
 mod instruct;
-
 use anyhow::{bail, Result};
 use eframe::{
-    egui::{self, CentralPanel, Grid, TopBottomPanel, Ui, Window},
-    emath::Align2,
-    NativeOptions, Theme,
+    egui::{self, CentralPanel, Grid, SidePanel, Ui, Window},
+    NativeOptions,
 };
 use plaine::{
     plan::{Entry, Plan},
     read::GDrivePlan,
     utils::{self, gen_pw, TrunkFileName},
+    Brn, RootName,
 };
 use rfd::FileDialog;
 use std::{
