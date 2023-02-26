@@ -27,21 +27,46 @@ pub trait Plan {
             .collect()
     }
 
-    fn serialize_to_fs(&self, trunk: &str, branch: Option<&str>) -> Result<crate::TreeUuid> {
-        let tree = match branch {
-            Some(branch) => {
-                format!("{trunk}~{branch}")
-            }
-            None => trunk.to_string(),
+    /// Serialize [`Self`] and write the result to the given `path`.
+    ///
+    /// Given a reference to `self`, serialize to Json format. Write the
+    /// file to the given `path`, naming it with the `trunk`, and optionally
+    /// appending a `branch`. Lastly, a uuid is pushed to the file name before
+    /// writing. `trunk` is in the form of a `&str`, as is the inner `branch`.
+    ///
+    /// The generated uuid is returned as a confirmation that the write did
+    /// not fail.
+    ///
+    /// # Errors
+    ///
+    /// This function will not force a write to the file system in any way.
+    /// If the given `path` cannot be written to, this will return an error.
+    ///
+    /// Additionally, serialization can fail prior to a write occurring, this
+    /// will return an error as well.
+    fn serialize_and_write<P>(
+        &self,
+        trunk: Rut,
+        branch: Option<Brn>,
+        path: P,
+    ) -> Result<uuid::Uuid>
+    where
+        P: AsRef<Path>,
+    {
+        let full_tree = if let Some(branch_name) = branch {
+            format!("{trunk}~{branch_name}")
+        } else {
+            trunk.to_string()
         };
 
         let uuid = Uuid::new_v4();
-        let tree_uuid = format!("{tree}_{uuid}");
-        let full_path = format!(".local/{tree_uuid}.json");
+
+        let s = path.as_ref().display();
+        let file_name = format!("{s}{full_tree}_{uuid}.json");
         let json = self.serialize()?;
 
-        std::fs::write(full_path, json)?;
-        Ok(tree_uuid)
+        std::fs::write(file_name, json)?;
+        Ok(uuid)
     }
 
     /// Serialize [`Self`] into Json format.
