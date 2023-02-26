@@ -1,5 +1,4 @@
 #![windows_subsystem = "windows"]
-#![allow(dead_code)]
 
 mod instruct;
 use anyhow::{bail, Result};
