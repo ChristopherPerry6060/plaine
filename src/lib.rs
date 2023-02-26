@@ -11,21 +11,19 @@ pub type TreeJson = String;
 /// Generally, not displayed to the user.
 pub type TreeUuid = String;
 
-/// The leftmost [`Group`] of the [`Tree`].
-pub type Trunk = String;
-
-/// A pair of words, connected by a single `-`.
+/// An owned `String` representing left side of a [`Tree`]'s name.
 ///
-/// # Examples
-///
-/// * `endearing-shredder`.
-/// * `flirty-bucket`.
-pub type Group = String;
+/// [`Tree`]:(crate::Tree)
+pub type RootName = String;
 
-/// One of more [`Group`]s that are connected to describe an item's path.
-pub type Tree = String;
+/// A borrowed slice of a [`RootName`].
+/// 
+/// [`RootName`]:(crate::RootName)
+pub type Rut<'a> = &'a str;
 
 pub type Branch = String;
+
+pub type Brn<'a> = &'a str;
 
 /// An owned Fulfillment Network Sku
 pub type Fnsku = String;
