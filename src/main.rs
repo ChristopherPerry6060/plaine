@@ -15,7 +15,10 @@ use plaine::{
     utils::{self, gen_pw, TrunkFileName},
 };
 use rfd::FileDialog;
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 fn main() {
     let native_options = NativeOptions {
@@ -105,6 +108,18 @@ pub struct Gui {
 }
 
 impl Gui {
+    /// Swap out all of the items in [`Self`].
+    ///
+    /// Always prefer to use this rather altering the field directly.
+    /// Using this pattern will allow to containerize certain updates that
+    /// need to take place on branch/trunk changes.
+    fn clear_and_push_items(&mut self, items: Vec<Entry>, trunk: Option<Trunk>) {
+        if trunk.is_some() {
+            self.items = items;
+            self.trunk = trunk;
+        };
+    }
+
     /// A component displaying all available [`Trunk`]s and [`Branch`]s.
     fn comp_trunks_branches_list(&mut self, ui: &mut Ui) {
         // When a refresh is requested, load up records
@@ -124,22 +139,51 @@ impl Gui {
                 ui.label("Note");
                 ui.label("Actions");
                 ui.end_row();
-                let splits = self
-                    .trunk_store
+                let trunk_store = self.trunk_store.clone();
+                let mut splits = trunk_store
                     .iter()
                     .filter_map(|trunk_name| trunk_name.split_once('_'));
-                splits.for_each(|split| {
+                let selection = splits.find_map(|split| {
                     let (name, _id) = split;
                     ui.label(name);
                     ui.label(name);
-                    ui.small_button("Select");
+                    if ui.small_button("Select").clicked() {
+                        // Only the trunk name is needed
+                        // since we will need to summate all records
+                        // within that trunk.
+                        return Some(name);
+                    };
                     ui.label("Notes");
-                    ui.small_button("Menus");
+                    ui.label("Menus");
                     ui.end_row();
+                    None
                 });
+                if let Some(item) = selection {
+                    self.try_load_trunk(item);
+                };
             });
     }
 
+    fn try_load_trunk(&mut self, trunk: &str) {
+        let path = self.config.relative_trunk_path();
+        let cloner = self.trunk_store.clone();
+        let items: Vec<Entry> = cloner
+            .into_iter()
+            .filter(|in_tks| in_tks.contains(trunk))
+            .flat_map(|to_pull| {
+                let mut fullpath = PathBuf::from(path);
+                fullpath.push(to_pull);
+                let Ok(str) = std::fs::read_to_string(&fullpath) else {
+                    return None;
+                };
+                serde_json::from_str::<Vec<Entry>>(&str).ok()
+            })
+            .flatten()
+            .collect();
+
+        let cloned_trunk = trunk.to_string();
+        self.clear_and_push_items(items, Some(cloned_trunk));
+    }
     /// Return a default instance.
     pub fn new(_: &eframe::CreationContext<'_>) -> Self {
         Self::default()
