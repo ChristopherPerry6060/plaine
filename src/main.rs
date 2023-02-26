@@ -20,8 +20,8 @@ use std::{
 
 fn main() {
     let native_options = NativeOptions {
-        follow_system_theme: false,
-        default_theme: Theme::Light,
+        follow_system_theme: true,
+        // default_theme: Theme::Light,
         ..Default::default()
     };
     eframe::run_native(
@@ -101,7 +101,7 @@ impl Gui {
     fn comp_trunks_branches_list(&mut self, ui: &mut Ui) {
         // When a refresh is requested, load up records
         if ui.button("Refresh").clicked() {
-            let path = self.config.relative_trunk_path();
+            let path = self.config.local_dir();
             if let Ok(trunks) = utils::gather_records(path) {
                 self.trunk_store = trunks;
             };
@@ -142,24 +142,26 @@ impl Gui {
     }
 
     fn try_load_trunk(&mut self, trunk: &str) {
-        let path = self.config.relative_trunk_path();
-        let cloner = self.trunk_store.clone();
-        let items: Vec<Entry> = cloner
-            .into_iter()
-            .filter(|in_tks| in_tks.contains(trunk))
-            .flat_map(|to_pull| {
-                let mut fullpath = PathBuf::from(path);
-                fullpath.push(to_pull);
-                let Ok(str) = std::fs::read_to_string(&fullpath) else {
-                    return None;
-                };
-                serde_json::from_str::<Vec<Entry>>(&str).ok()
+        let items: Vec<String> = self.trunk_store.clone();
+        let branch_names = items.iter().filter(|x| {
+            let Some((prefix, _suffix)) = x.split_once('_') else {
+                return false;
+            };
+            prefix.eq(trunk)
+        });
+
+        let loaded_branches = branch_names
+            .flat_map(|filename| {
+                let local = self.get_local_path()?.display();
+                let path = format!("{local}{filename}");
+                dbg!(&path);
+                let entry = std::fs::read_to_string(&path).ok()?;
+                serde_json::from_str::<Vec<Entry>>(&entry).ok()
             })
             .flatten()
             .collect();
 
-        let cloned_trunk = trunk.to_string();
-        self.clear_and_push_items(items, Some(cloned_trunk));
+        self.clear_and_push_items(loaded_branches, Some(trunk.to_string()));
     }
     /// Return a default instance.
     pub fn new(_: &eframe::CreationContext<'_>) -> Self {
@@ -167,11 +169,11 @@ impl Gui {
     }
 
     fn main_window(&mut self, ui: &mut Ui) {
-        self.button_gd_upload(ui);
+        self.google_drive_upload_button(ui);
 
         if ui.button("Write Check File").clicked() {
             let items = self.items.clone();
-            let plan_name = self.trunk.clone().unwrap_or_default();
+            let plan_name = self.root.clone().unwrap_or_default();
             plaine::write::write_check_file(items, plan_name).expect("File to write");
         };
 
@@ -179,7 +181,7 @@ impl Gui {
             let unselected = self.unselected.clone();
             let selected_items = self.items.remove_fnskus(unselected.into_iter());
 
-            let plan_name = self.trunk.clone().unwrap_or_default();
+            let plan_name = self.root.clone().unwrap_or_default();
             if let Ok(response) = plaine::write::write_upload_txt(selected_items, plan_name) {
                 let (branch, items) = response.take();
                 self.branch_pending_name = Some(branch);
@@ -187,25 +189,44 @@ impl Gui {
             };
         };
 
-        if let Some(branch) = &self.branch_pending_name {
-            let button_text = format!("Set the branch: {branch}?");
-            if ui.button(button_text).clicked() {
-                self.confirm_branch_setting = true
-            };
-            if self.confirm_branch_setting && ui.button("Are you sure?").clicked() {
-                // TODO: This should show a warning about the error.
-                if let Ok(mut negatives) = self.try_write_branch(Some(branch)) {
-                    self.items.append(&mut negatives)
-                };
-            };
+        if ui.button("branch").clicked() {
+            self.branch_selected_items(&gen_pw()).unwrap();
         };
 
-        Grid::new("buttons").striped(true).show(ui, |ui| {
+        Grid::new("item-grid").striped(true).show(ui, |ui| {
             self.fill_grid(ui);
         });
     }
 
-    fn button_gd_upload(&mut self, ui: &mut Ui) {
+    /// Adjust the [`Root`] that is currently attached to [`Self`].
+    ///
+    /// This function is also called by [`branch`]. The two differ in that
+    /// branch will adjust the current root downwards, and then adjust
+    /// a new branch upwards.
+    ///
+    /// Neither this function, or branch will adjust the in-memory entries
+    /// until the serialization and writing returns without error.
+    ///
+    /// # Errors
+    ///
+    /// This function will not force a write to the file system in any way.
+    /// If the given `path` cannot be written to, this will return an error.
+    ///
+    /// Additionally, serialization can fail prior to a write occurring, this
+    /// will return an error as well.
+    ///
+    fn adjust_root(&mut self, adjustments: Vec<Entry>) -> Result<()> {
+        // We need to know where to save out files.
+        let path = self.config.local_dir();
+
+        match &self.root {
+            Some(root) => adjustments.serialize_and_write(root, None, path)?,
+            None => bail!("Adjustments failed write"),
+        };
+        Ok(())
+    }
+
+    fn google_drive_upload_button(&mut self, ui: &mut Ui) {
         if !ui.button("Upload").clicked() {
             return;
         };
@@ -221,23 +242,55 @@ impl Gui {
 
     fn try_upload_proc(&mut self, picked: PathBuf) -> Result<Vec<Entry>> {
         let items = GDrivePlan::proc_from_path(picked)?;
+        let path = self.config.local_dir();
         let trunk = gen_pw();
-        items.serialize_to_fs(&trunk, None)?;
+        items.serialize_and_write(&trunk, None, path)?;
         self.items.clear();
-        self.trunk = Some(trunk);
+        self.root = Some(trunk);
         Ok(items)
     }
 
-    fn try_write_branch(&self, branch: Option<&str>) -> Result<Vec<Entry>> {
-        let trunk = match &self.trunk {
+    /// Create a new branch from the selected items in [`Self`].
+    ///
+    /// As branching is a zero sum action, calling this method implicitly
+    /// contains a negation of the items that are being branched.
+    ///
+    /// # Errors
+    ///
+    /// This functions may fail if the local path configurations are not
+    /// set correctly. Serialization, and interactions with the file
+    /// system may fail for the usual reasons as well.
+    ///
+    fn branch_selected_items(&mut self, branch: Brn) -> Result<()> {
+        let branching_items = self.get_selected_items();
+        let negated_items = branching_items.as_negated();
+        let trunk = match &self.root {
             Some(ref name) => name,
             None => bail!("Can't branch without a trunk!"),
         };
 
-        let set = self.branch_pending_items.clone();
-        let negatives = set.as_negated();
-        let _ = set.serialize_to_fs(trunk, branch)?;
-        Ok(negatives)
+        if let Some(local) = self.get_local_path() {
+            branching_items.serialize_and_write(trunk, Some(branch), local)?;
+        }
+        self.adjust_root(negated_items)
+    }
+
+    fn get_local_path(&self) -> Option<&Path> {
+        Some(&self.config.local_dir)
+    }
+
+    fn get_selected_items(&self) -> Vec<Entry> {
+        let all_fnskus = self
+            .items
+            .iter()
+            .map(|x| x.get_fnsku().to_string())
+            .collect::<HashSet<_>>();
+        let diff = all_fnskus.difference(&self.unselected).collect::<Vec<_>>();
+        self.items
+            .clone()
+            .into_iter()
+            .filter(|x| diff.iter().any(|y| x.get_fnsku() == y.as_str()))
+            .collect::<Vec<_>>()
     }
 
     /// Fill the Ui with a grid, displaying sums of the passed entries.
