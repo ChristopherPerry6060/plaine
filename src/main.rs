@@ -55,15 +55,13 @@ impl eframe::App for Gui {
 /// [`Gui`]:(crate::Gui)
 #[derive(Debug, Clone)]
 struct GuiConfig {
-    relative_trunk_path: PathBuf,
+    local_dir: PathBuf,
 }
 
 impl Default for GuiConfig {
     fn default() -> Self {
-        let relative_trunk_path = PathBuf::from(".local/");
-        Self {
-            relative_trunk_path,
-        }
+        let local_dir = PathBuf::from(".local/");
+        Self { local_dir }
     }
 }
 
@@ -71,8 +69,8 @@ impl GuiConfig {
     /// Return a relative `Path` to [`Trunk`] storage.
     ///
     /// [Trunk]:(crate::Trunk)
-    fn relative_trunk_path(&self) -> &std::path::Path {
-        &self.relative_trunk_path
+    fn local_dir(&self) -> &std::path::Path {
+        &self.local_dir
     }
 }
 
