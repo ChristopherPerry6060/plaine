@@ -77,14 +77,11 @@ impl GuiConfig {
 /// The Plaine application data.
 #[derive(Default, Debug)]
 pub struct Gui {
-    _gd_plan_failed_upload: bool,
     branch_pending_items: Vec<Entry>,
     branch_pending_name: Option<String>,
     config: GuiConfig,
-    confirm_branch_setting: bool,
-    error_stack: Vec<String>,
     items: Vec<Entry>,
-    trunk: Option<String>,
+    root: Option<String>,
     trunk_store: Vec<TrunkFileName>,
     unselected: HashSet<String>,
 }
