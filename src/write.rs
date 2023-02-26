@@ -52,7 +52,7 @@ impl UploadResponse {
     }
 }
 
-pub fn write_upload_txt(entry_vec: Vec<Entry>, trunk: crate::Trunk) -> Result<UploadResponse> {
+pub fn write_upload_txt(entry_vec: Vec<Entry>, trunk: crate::RootName) -> Result<UploadResponse> {
     let mut header = std::fs::read_to_string(".local/upload.txt")?;
     let predicate = header.clone();
 
