@@ -189,15 +189,10 @@ impl Gui {
             let selected_items = self.items.remove_fnskus(unselected.into_iter());
 
             let plan_name = self.trunk.clone().unwrap_or_default();
-            match plaine::write::write_upload_txt(selected_items, plan_name) {
-                Ok(response) => {
-                    let (branch, items) = response.take();
-                    self.branch_pending_name = Some(branch);
-                    self.branch_pending_items = items;
-                }
-                Err(err) => {
-                    dbg!(format!("Uh oh, {err}."));
-                }
+            if let Ok(response) = plaine::write::write_upload_txt(selected_items, plan_name) {
+                let (branch, items) = response.take();
+                self.branch_pending_name = Some(branch);
+                self.branch_pending_items = items;
             };
         };
 
