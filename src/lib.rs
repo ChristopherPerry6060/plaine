@@ -6,11 +6,6 @@ pub mod write;
 /// A [`Tree`] that has been serialized to a Json string.
 pub type TreeJson = String;
 
-/// A universally unique identifier that is pinned to the [`Tree`].
-///
-/// Generally, not displayed to the user.
-pub type TreeUuid = String;
-
 /// An owned `String` representing left side of a [`Tree`]'s name.
 ///
 /// [`Tree`]:(crate::Tree)
