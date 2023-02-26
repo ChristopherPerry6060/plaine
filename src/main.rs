@@ -90,12 +90,10 @@ impl Gui {
     /// Swap out all of the items in [`Self`].
     ///
     /// Always prefer to use this rather altering the field directly.
-    /// Using this pattern will allow to containerize certain updates that
-    /// need to take place on branch/trunk changes.
-    fn clear_and_push_items(&mut self, items: Vec<Entry>, trunk: Option<Trunk>) {
+    fn clear_and_push_items(&mut self, items: Vec<Entry>, trunk: Option<RootName>) {
         if trunk.is_some() {
             self.items = items;
-            self.trunk = trunk;
+            self.root = trunk;
         };
     }
 
