@@ -107,12 +107,11 @@ impl Gui {
     /// * Unselected Items.
     /// * Branch statuses
     fn refresh(&mut self) {
-        if let Ok(trunks) = dbg!(utils::gather_records(LOCALDIR)) {
+        if let Ok(trunks) = utils::gather_records(LOCALDIR) {
             self.branch_list = trunks;
         };
-        let root = self.branch.clone().unwrap_or_default();
-        self.unselected = HashSet::default();
 
+        self.unselected = HashSet::default();
         self.branch_list
             .clone()
             .into_iter()
@@ -124,17 +123,27 @@ impl Gui {
         let reads = dir.filter_map(|dir| dir.ok());
         let helper = reads.map(|x| (x.path(), x.file_name()));
         let map_helper = helper.filter_map(|(p, name)| {
-            let str = std::fs::read_to_string(p).ok()?;
+            let str = read_to_string(p).ok()?;
             let status: Status = serde_json::from_str(&str).ok()?;
             let (branch, _) = name.to_str()?.split_once('_')?;
+
             Some((branch.to_string(), status))
         });
         let mut hm: HashMap<String, Status> = HashMap::default();
-        map_helper.for_each(|(bn, status)| {
+        let mut sorted = map_helper.collect::<Vec<_>>();
+
+        sorted.sort();
+        sorted.into_iter().for_each(|(bn, status)| {
             hm.insert(bn, status);
         });
+        if let Some(ref branch) = &self.current_branch.clone() {
+            self.switch_to_branch(branch);
+        };
         self.branch_statuses = hm;
-        self.load_branch(&root);
+        self.check_memory = Vec::default();
+        self.check_entry_state = CheckEntry::default();
+        self.in_check = false;
+        self.moved_branch_name = None;
     }
 
     /// Shows the branch list in the given UI.
@@ -153,12 +162,15 @@ impl Gui {
 
         let mut vex = uniques.clone().into_iter().collect::<Vec<_>>();
         vex.sort();
-
-        let prepped_pairs = uniques
+        let istatus = self.branch_statuses.clone();
+        let prepped_pairs = vex
             .into_iter()
-            .filter_map(|name| {
-                let status = self.branch_statuses.get(name)?;
-                Some((name.to_owned(), status.to_string()))
+            .map(|name| {
+                let status = match istatus.get(name) {
+                    Some(x) => x.to_owned(),
+                    None => Status::default(),
+                };
+                (name.to_string(), status.to_string())
             })
             .collect::<Vec<_>>();
 
