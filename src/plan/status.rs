@@ -15,20 +15,20 @@ struct StatusRecord {
 }
 
 impl Status {
-    pub fn mark_for_check<P>(path: P, branch: Brn) -> Result<()>
+    pub fn mark<P>(status: &Status, path: P, branch: Brn) -> Result<()>
     where
         P: AsRef<Path>,
     {
         let uuid = Uuid::new_v4();
         let full = format!("{branch}_{uuid}.json");
+        let mut full_filename = path.as_ref().to_path_buf();
+        full_filename.push(full);
 
-        let mut opath = path.as_ref().to_path_buf();
-        opath.push(full);
-        let sr = Self::Check;
-
-        let json = serde_json::to_string(&sr)?;
-        Ok(std::fs::write(opath, json)?)
+        let json = serde_json::to_string(&status)?;
+        Ok(std::fs::write(full_filename, json)?)
     }
+
+
 }
 
 /// The current stage of progress for [`Plan`]s.
@@ -37,24 +37,12 @@ pub enum Status {
     #[default]
     Open,
     Check,
-    Confirm,
-    Measure,
-    BoxContents,
-    CaseLabel,
-    Staged,
-    Shipped,
 }
 impl Display for Status {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Status::Open => write!(f, "Open"),
             Status::Check => write!(f, "Check"),
-            Status::Confirm => write!(f, "Confirm"),
-            Status::Measure => write!(f, "Measure"),
-            Status::BoxContents => write!(f, "BoxContents"),
-            Status::CaseLabel => write!(f, "CaseLabel"),
-            Status::Staged => write!(f, "Staged"),
-            Status::Shipped => write!(f, "Shipped"),
         }
     }
 }
