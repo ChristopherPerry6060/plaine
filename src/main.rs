@@ -52,32 +52,6 @@ impl eframe::App for Gui {
     }
 }
 
-/// The configurations available to [`Gui`].
-///
-/// # Fields
-/// * `relative_trunk_path`: "\[Binary Root\]/.local/"
-///
-/// [`Gui`]:(crate::Gui)
-#[derive(Debug, Clone)]
-struct GuiConfig {
-    local_dir: PathBuf,
-}
-
-impl Default for GuiConfig {
-    fn default() -> Self {
-        let local_dir = PathBuf::from(".local/");
-        Self { local_dir }
-    }
-}
-
-impl GuiConfig {
-    /// Return a relative `Path` to [`Trunk`] storage.
-    ///
-    /// [Trunk]:(crate::Trunk)
-    fn local_dir(&self) -> &std::path::Path {
-        &self.local_dir
-    }
-}
 #[derive(Default, Debug)]
 struct CheckEntry {
     fnsku: String,
@@ -108,8 +82,7 @@ impl Gui {
     /// * Unselected Items.
     /// * Branch statuses
     fn refresh(&mut self) {
-        let path = self.config.local_dir();
-        if let Ok(trunks) = utils::gather_records(path) {
+        if let Ok(trunks) = dbg!(utils::gather_records(LOCALDIR)) {
             self.branch_list = trunks;
         };
         let root = self.branch.clone().unwrap_or_default();
@@ -121,11 +94,8 @@ impl Gui {
             .collect::<HashSet<String>>()
             .iter();
 
-        let mut status_dir = path.to_path_buf();
-        status_dir.push("STATUS");
-        let Ok(dir) = std::fs::read_dir(&status_dir) else {
-            return;
-        };
+        let dir = std::fs::read_dir(STATUSDIR).expect("Read Statuses");
+
         let reads = dir.filter_map(|dir| dir.ok());
         let helper = reads.map(|x| (x.path(), x.file_name()));
         let map_helper = helper.filter_map(|(p, name)| {
@@ -194,8 +164,7 @@ impl Gui {
         self.branch = Some(brn.to_string());
         self.items = eq_brn_files
             .flat_map(|filename| {
-                let local = self.branch_dir()?.display();
-                let path = format!("{local}{filename}");
+                let path = format!("{LOCALDIR}{filename}");
                 let entry = std::fs::read_to_string(&path).ok()?;
                 serde_json::from_str::<Vec<Entry>>(&entry).ok()
             })
@@ -246,6 +215,7 @@ impl Gui {
     fn run_action(&mut self, branch: Branch, status: &Status, ui: &mut Ui) {
         if matches!(status, Status::Open) {
             self.branch_selected_items(&branch);
+            Status::mark_for_check(STATUSDIR, &branch).expect("Mark as Checked");
             self.in_action = false;
         };
         if matches!(status, Status::Check) {
@@ -305,10 +275,9 @@ impl Gui {
     ///
     fn adjust_root(&mut self, adjustments: Vec<Entry>) -> Result<()> {
         // We need to know where to save out files.
-        let path = self.config.local_dir();
 
         match &self.branch {
-            Some(root) => adjustments.serialize_and_write(root, None, path)?,
+            Some(root) => adjustments.serialize_and_write(root, None, LOCALDIR)?,
             None => bail!("Adjustments failed write"),
         };
         self.refresh();
@@ -326,8 +295,10 @@ impl Gui {
         let Ok(items) = GDrivePlan::proc_from_path(file_picker) else {
             return;
         };
-        let path = self.config.local_dir();
+        let trunk = gen_pw();
+        if let Ok(_) = items.serialize_and_write(&trunk, None, LOCALDIR) {
             self.load_branch(&trunk);
+            Status::mark_as_open(STATUSDIR, &trunk).expect("Mark as open.");
         };
     }
 
@@ -350,15 +321,8 @@ impl Gui {
             None => bail!("Can't branch without a root!"),
         };
 
-        if let Some(local) = self.branch_dir() {
-            branching_items.serialize_and_write(root, Some(branch), local)?;
-        }
+        branching_items.serialize_and_write(root, Some(branch), LOCALDIR)?;
         self.adjust_root(negated_items)
-    }
-
-    /// Return an option containing the branch directory.
-    fn branch_dir(&self) -> Option<&Path> {
-        Some(&self.config.local_dir)
     }
 
     /// Return the currently selected items being shown in the gui.
