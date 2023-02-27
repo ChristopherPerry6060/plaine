@@ -1,4 +1,6 @@
-use crate::{Brn, Fnsku, TreeJson, Rut};
+pub mod status;
+
+use crate::{Brn, Fnsku, Rut, TreeJson};
 use anyhow::Result;
 use std::{
     collections::{HashMap, HashSet},
@@ -44,12 +46,7 @@ pub trait Plan {
     ///
     /// Additionally, serialization can fail prior to a write occurring, this
     /// will return an error as well.
-    fn serialize_and_write<P>(
-        &self,
-        trunk: Rut,
-        branch: Option<Brn>,
-        path: P,
-    ) -> Result<uuid::Uuid>
+    fn serialize_and_write<P>(&self, trunk: Rut, branch: Option<Brn>, path: P) -> Result<uuid::Uuid>
     where
         P: AsRef<Path>,
     {
@@ -196,8 +193,8 @@ pub trait Plan {
                 acc
             } else {
                 // New skus can be inserted
-                let id = entry.get_id().to_string();
-                acc.insert(id, entry.units).expect("New hashmap key");
+                let id = entry.get_fnsku().to_string();
+                acc.insert(id, entry.units);
                 acc
             }
         };
@@ -230,10 +227,17 @@ pub struct Entry {
     total_pounds: Option<f32>,
     id: String,
     upc: Option<String>,
-    dimensions: Option<[f32; 3]>,
+    case_dimensions: Option<[f32; 3]>,
     amz_dimensions: Option<[f32; 3]>,
 }
 impl Entry {
+    pub fn get_amz_dimensions(&self) -> Option<[f32; 3]> {
+        self.amz_dimensions
+    }
+    pub fn get_case_dimensions(&self) -> Option<[f32; 3]> {
+        self.case_dimensions
+    }
+
     pub fn set_amz_size(&mut self, set: Option<String>) {
         self.amz_size = set;
     }
@@ -316,7 +320,7 @@ impl Entry {
 
     pub fn set_dimensions(&mut self, dims: Option<[f32; 3]>) {
         let Some(udims) = dims else {
-            self.dimensions = None;
+            self.case_dimensions = None;
 
             return;
         };
@@ -332,7 +336,7 @@ impl Entry {
         let h = rounded
             .pop()
             .expect("vec made from [f32;3] can be popped 3 times.");
-        self.dimensions = Some([l as f32, w as f32, h as f32]);
+        self.case_dimensions = Some([l as f32, w as f32, h as f32]);
     }
 
     pub fn set_amz_dimensions(&mut self, dims: Option<[f32; 3]>) {
@@ -505,9 +509,5 @@ mod tests {
 
         let mut entry2 = entry1.clone();
         entry2.set_units(20);
-
-        let plan = vec![entry1, entry2];
-        let neg = plan.as_negated();
-        let _json = neg.serialize().unwrap_or_default();
     }
 }
