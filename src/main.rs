@@ -193,21 +193,31 @@ impl Gui {
     }
 
     /// Update the current branch, and load it from the branch dir.
-    fn load_branch(&mut self, brn: Brn) {
-        let eq_brn_files = self.branch_list.iter().filter(|x| match x.split_once('_') {
-            Some((prefix, _suffix)) => prefix.eq(brn),
-            _ => false,
+    fn switch_to_branch(&mut self, brn: Brn) {
+        // Remove client from action state whenever switching
+
+        self.in_check = false;
+        let current_branch_list = &mut self.branch_list;
+        let incoming_branch = current_branch_list.iter().filter(|x| {
+            let Some((json_file_prefix, _)) = x.split_once('_') else {
+                return false;
+            };
+            json_file_prefix.eq(brn)
         });
 
-        self.branch = Some(brn.to_string());
-        self.items = eq_brn_files
-            .flat_map(|filename| {
-                let path = format!("{LOCALDIR}{filename}");
-                let entry = std::fs::read_to_string(&path).ok()?;
+        // Set the current branch in self.
+        self.current_branch = Some(brn.to_string());
+        let file_names = incoming_branch.map(|filename| format!("{LOCALDIR}{filename}"));
+
+        let deser_entries = file_names
+            .filter_map(|path| {
+                let entry = read_to_string(path).ok()?;
                 serde_json::from_str::<Vec<Entry>>(&entry).ok()
             })
             .flatten()
             .collect();
+
+        self.items = deser_entries;
     }
 
     /// Return a default instance.
