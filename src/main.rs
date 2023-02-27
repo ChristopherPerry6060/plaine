@@ -1,29 +1,24 @@
 #![windows_subsystem = "windows"]
-#![allow(dead_code, unused_imports)]
 
 const CHECKDIR: &'static str = ".local/CHECK/";
 const STATUSDIR: &'static str = ".local/STATUS/";
 const LOCALDIR: &'static str = ".local/";
 
-mod instruct;
 use anyhow::{anyhow, bail, Result};
 use eframe::{
-    egui::{self, CentralPanel, Grid, SidePanel, Ui, Window},
+    egui::{self, CentralPanel, Grid, SidePanel, Ui},
     NativeOptions,
 };
 use plaine::{
-    plan::{
-        status::{self, Status},
-        Entry, Plan,
-    },
+    plan::{status::Status, Entry, Plan},
     read::GDrivePlan,
     utils::{self, gen_pw, TrunkFileName},
-    Branch, Brn, Fnsku,
+    write, Branch, Brn,
 };
 use rfd::FileDialog;
 use std::{
     collections::{HashMap, HashSet},
-    path::{Path, PathBuf},
+    fs::read_to_string,
 };
 
 fn main() {
