@@ -1,6 +1,6 @@
 use crate::{
     plan::{Entry, Plan},
-    Branch,
+    Brn,
 };
 use anyhow::{anyhow, Context, Result};
 use std::path::PathBuf;
@@ -26,33 +26,7 @@ pub fn write_check_file(entry_vec: Vec<Entry>, plan_name: String) -> std::io::Re
     let path = PathBuf::from(format!("{plan_name}-CheckFile.csv"));
     std::fs::write(path, contents)
 }
-
-/// [`Entry`]s and their [`Branch`], as response from [`write_upload_txt`].
-///
-/// [`Entry`]:(Entry)
-/// [`Branch`]:(Branch)
-/// [write_upload_txt]:(write_upload_txt)
-#[derive(Default, Debug)]
-pub struct UploadResponse {
-    branch: Branch,
-    items: Vec<Entry>,
-}
-impl UploadResponse {
-    /// Construct [`Self`] from a [`Branch`] and [`Entry`]s.
-    ///
-    /// [`Entry`]:(Entry)
-    /// [`Branch`]:(Branch)
-    fn new(branch: Branch, items: Vec<Entry>) -> Self {
-        Self { branch, items }
-    }
-
-    /// Take ownership of [`Self`], returning its fields as a tuple.
-    pub fn take(self) -> (Branch, Vec<Entry>) {
-        (self.branch, self.items)
-    }
-}
-
-pub fn write_upload_txt(entry_vec: Vec<Entry>, trunk: crate::RootName) -> Result<UploadResponse> {
+pub fn write_upload_txt(entry_vec: Vec<Entry>, brn: Brn) -> Result<()> {
     let mut header = std::fs::read_to_string(".local/upload.txt")?;
     let predicate = header.clone();
 
@@ -71,19 +45,9 @@ pub fn write_upload_txt(entry_vec: Vec<Entry>, trunk: crate::RootName) -> Result
             None => continue,
         };
     }
-    if header != predicate {
-        let branch_pre = parity_wordlist::random_phrase(1);
-        let branch_post = parity_wordlist::random_phrase(1);
-        let branch = format!("{branch_pre}-{branch_post}");
-        let upload_name = format!("{trunk}~{branch}");
-        let path = PathBuf::from(format!("{upload_name}-Upload.txt"));
-        std::fs::write(path, header).context("fs::write failed")?;
-        Ok(UploadResponse::new(branch, entry_w_msku))
-    } else {
-        Err(anyhow!("Empty upload file"))
+    if header == predicate {
+        return Err(anyhow!("Upload File Empty"));
     }
+    let path = PathBuf::from(format!("{brn}-Upload.txt"));
+    std::fs::write(path, header).context("fs::write failed")
 }
-
-
-
-
