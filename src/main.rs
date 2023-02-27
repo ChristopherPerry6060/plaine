@@ -86,16 +86,17 @@ struct CheckEntry {
 /// The Plaine application data.
 #[derive(Default, Debug)]
 pub struct Gui {
+    moved_branch_name: Option<Branch>,
     check_memory: Vec<Entry>,
-    check_due_memory: Vec<Entry>,
     check_entry_state: CheckEntry,
-    in_action: bool,
-    config: GuiConfig,
+    check_entry_error: Option<anyhow::Error>,
+    in_check: bool,
     items: Vec<Entry>,
-    branch: Option<String>,
+    current_branch: Option<String>,
     branch_list: Vec<TrunkFileName>,
     branch_statuses: HashMap<String, Status>,
     unselected: HashSet<String>,
+    error_stack: Vec<anyhow::Error>,
 }
 
 impl Gui {
