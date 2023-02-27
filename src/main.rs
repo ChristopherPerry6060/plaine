@@ -1,8 +1,8 @@
 #![windows_subsystem = "windows"]
 
-const CHECKDIR: &'static str = ".local/CHECK/";
-const STATUSDIR: &'static str = ".local/STATUS/";
-const LOCALDIR: &'static str = ".local/";
+const CHECKDIR: &str = ".local/CHECK/";
+const STATUSDIR: &str = ".local/STATUS/";
+const LOCALDIR: &str = ".local/";
 
 use anyhow::{anyhow, bail, Result};
 use eframe::{
