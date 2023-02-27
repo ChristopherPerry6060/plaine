@@ -226,166 +226,181 @@ impl Gui {
     }
 
     fn main_window(&mut self, ui: &mut Ui) {
-        self.legacy_button(ui);
+        if ui.button("Upload Google Drive Plan").clicked() {
+            match self.legacy_button() {
+                Err(err) => self.error_stack.push(err),
+                Ok(branch) => {
+                    self.switch_to_branch(&branch);
+                    self.refresh();
+                }
+            };
+        };
         self.actions(ui);
     }
 
-    fn actions(&mut self, ui: &mut Ui) {
-        let cheat = self.branch.clone();
-        let cheat2 = self.branch_statuses.clone();
-        let Some(brn) =cheat else {
+    fn actions(&mut self, ui: &mut Ui) -> Option<()> {
+        let current_branch = &self.current_branch.clone()?;
+        let status_map = self.branch_statuses.clone();
+        let current_status = status_map.get(current_branch)?;
+
+        ui.separator();
+        ui.label("You are on:");
+        ui.label(current_branch);
+        ui.separator();
+
+        if let Some(recent_moved_branch) = &self.moved_branch_name {
+            ui.separator();
+            ui.label("You recently moved items to:");
+            ui.label(recent_moved_branch);
+            ui.separator();
+        }
+
+        if matches!(current_status, Status::Open) {
+            let make_upload_file = ui.button("Make Upload File");
+            let remove_unselected = ui.button("Move unselected to new branch");
+            let mark_for_checking = ui.button("Mark CURRENT branch for checking");
+
+            if make_upload_file.clicked() {
+                let items = self.items.clone();
+                write::write_upload_txt(items, current_branch).expect("Upload File Write");
+            };
+            if remove_unselected.clicked() {
+                let new_branch_name = self.new_branch_from_unselected().ok()?;
+                self.moved_branch_name = Some(new_branch_name);
+            };
+            if mark_for_checking.clicked() {
+                Status::mark(&Status::Check, STATUSDIR, current_branch).ok()?;
+                self.refresh()
+            };
+            self.show_current_branch_contents(ui);
+        };
+        // CLOSED SHIPMENT
+        if matches!(current_status, Status::Check) && ui.button("Start Check").clicked() {
+            self.prep_check();
+        };
+        if self.in_check {
+            self.run_check(current_branch.to_owned(), ui);
+        };
+        Some(())
+    }
+
+    fn prep_check(&mut self) {
+        self.in_check = true;
+        let check_dir = std::fs::read_dir(CHECKDIR).expect("Read Checks");
+        let reads = check_dir.filter_map(|dir| dir.ok());
+        let check_dir_files = reads.map(|x| (x.path(), x.file_name()));
+        let branch_and_check_pairs = check_dir_files.filter_map(|(p, name)| {
+            let str = read_to_string(p).ok()?;
+            let check_entries: Vec<Entry> = serde_json::from_str(&str).ok()?;
+            let (branch, _) = name.to_str()?.split_once('_')?;
+            Some((branch.to_string(), check_entries))
+        });
+        let current_branch = self.current_branch.as_ref();
+        let filtered_to_this_branch =
+            branch_and_check_pairs.filter(|(branch, _)| current_branch == Some(branch));
+        filtered_to_this_branch.for_each(|(_, entries)| {
+            self.check_memory.extend_from_slice(&entries);
+        });
+    }
+    fn run_check(&mut self, branch: Branch, ui: &mut Ui) {
+        let mut memory = self.check_memory.get_as_sums();
+        let current_check_item = &mut self.check_entry_state;
+        let _ = &self.items.clone();
+
+        memory.sort_unstable_by_key(|x| x.get_fnsku().to_string());
+
+        ui.label("Fnsku:");
+        ui.text_edit_singleline(&mut current_check_item.fnsku);
+        ui.label("UPC:");
+        ui.text_edit_singleline(&mut current_check_item.upc);
+
+        ui.label("Units Per Case:");
+        ui.add(egui::DragValue::new(&mut current_check_item.units_per_case));
+
+        ui.label("Cases:");
+        ui.add(egui::DragValue::new(&mut current_check_item.cases));
+
+        let submit = ui.button("Submit Item");
+
+        Grid::new("check-file").show(ui, |ui| {
+            ui.label("Scanned Fnskus");
+            ui.label("Units Checked");
+            ui.end_row();
+            memory.into_iter().for_each(|x| {
+                ui.label(x.get_fnsku());
+                ui.label(x.get_units().to_string());
+                ui.end_row();
+            });
+        });
+        if !submit.clicked() {
             return;
         };
-        let branch = brn.as_str();
-        if let Some(status) = cheat2.get(branch) {
-            let text = match status {
-                Status::Open => "Add Item",
-                Status::Check => "Start Check",
-                Status::Confirm => "Confirm Check",
-                Status::Measure => "Add Missing Dims",
-                Status::BoxContents => "Generate Box Contents",
-                Status::CaseLabel => "Generate Label Helper",
-                Status::Staged => "Add Shipment Info",
-                Status::Shipped => "Ship and Hide",
-            };
-            if self.in_action {
-                self.run_action(brn.to_owned(), status, ui);
-            };
-
-            if !self.in_action {
-                if ui.button(text).clicked() {
-                    self.in_action = true;
-                };
-                self.show_current_branch_contents(ui);
+        if let Some(error_message) = &self.check_entry_error {
+            let err_string = error_message.to_string();
+            ui.label(err_string);
+        };
+        let item_clone = current_check_item.to_owned();
+        match Vec::<Entry>::try_from(item_clone) {
+            Ok(entry_as_plan) => {
+                *current_check_item = CheckEntry::default();
+                entry_as_plan
+                    .serialize_and_write(&branch, CHECKDIR)
+                    .expect("Serialize check entry.");
+                self.check_entry_error = None;
+            }
+            Err(err) => {
+                self.check_entry_error = Some(err);
             }
         };
     }
-    fn run_action(&mut self, branch: Branch, status: &Status, ui: &mut Ui) {
-        if matches!(status, Status::Open) {
-            self.branch_selected_items(&branch);
-            Status::mark_for_check(STATUSDIR, &branch).expect("Mark as Checked");
-            self.in_action = false;
-        };
-        if matches!(status, Status::Check) {
-            let mut memory = self.check_memory.get_as_sums();
-            memory.sort_unstable_by_key(|x| x.get_fnsku().to_string());
-            let ce = &mut self.check_entry_state;
-            ui.text_edit_singleline(&mut ce.fnsku);
-            ui.text_edit_singleline(&mut ce.upc);
-            ui.add(egui::DragValue::new(&mut ce.units));
-            if ui.button("Add").clicked() {
-                let mut entry = Entry::default();
-                let upc = ce.upc.clone();
-                let fnsku = ce.fnsku.clone();
-
-                ce.fnsku.clear();
-                ce.upc.clear();
-                entry.set_fnsku(fnsku);
-
-                if upc.is_empty() {
-                    entry.set_upc(None);
-                } else {
-                    entry.set_upc(Some(upc));
-                };
-                entry.set_units(ce.units as i32);
-                self.check_memory.push(entry);
-            };
-
-            Grid::new("check-file").show(ui, |ui| {
-                ui.label("Scanned Fnskus");
-                ui.label("Units Checked");
-                ui.end_row();
-                memory.into_iter().for_each(|x| {
-                    ui.label(x.get_fnsku());
-                    ui.label(x.get_units().to_string());
-                    ui.end_row();
-                });
-            });
-        };
-    }
-
-    /// Adjust the [`Root`] that is currently attached to [`Self`].
-    ///
-    /// This function is also called by [`branch`]. The two differ in that
-    /// branch will adjust the current root downwards, and then adjust
-    /// a new branch upwards.
-    ///
-    /// Neither this function, or branch will adjust the in-memory entries
-    /// until the serialization and writing returns without error.
-    ///
-    /// # Errors
-    ///
-    /// This function will not force a write to the file system in any way.
-    /// If the given `path` cannot be written to, this will return an error.
-    ///
-    /// Additionally, serialization can fail prior to a write occurring, this
-    /// will return an error as well.
-    ///
-    fn adjust_root(&mut self, adjustments: Vec<Entry>) -> Result<()> {
-        // We need to know where to save out files.
-
-        match &self.branch {
-            Some(root) => adjustments.serialize_and_write(root, None, LOCALDIR)?,
-            None => bail!("Adjustments failed write"),
-        };
-        self.refresh();
-        Ok(())
-    }
 
     /// Show a file dialog so a google drive sheet can be uploaded.
-    fn legacy_button(&mut self, ui: &mut Ui) {
-        if !ui.button("Upload").clicked() {
-            return;
-        };
-        let Some(file_picker) = FileDialog::new().pick_file() else {
-            return;
-        };
-        let Ok(items) = GDrivePlan::proc_from_path(file_picker) else {
-            return;
-        };
+    fn legacy_button(&mut self) -> Result<Branch> {
+        let picked_file = FileDialog::new()
+            .pick_file()
+            .ok_or_else(|| anyhow::anyhow!("Uploading Failed"))?;
+
+        let items = GDrivePlan::proc_from_path(picked_file)?;
         let trunk = gen_pw();
-        if let Ok(_) = items.serialize_and_write(&trunk, None, LOCALDIR) {
-            self.load_branch(&trunk);
-            Status::mark_as_open(STATUSDIR, &trunk).expect("Mark as open.");
-        };
+        items.serialize_and_write(&trunk, LOCALDIR)?;
+        Status::mark(&Status::Open, STATUSDIR, &trunk)?;
+        Ok(trunk)
     }
 
-    /// Create a new branch from the selected items in [`Self`].
+    /// Split the unselected items off to a new brnach, marked as open.
     ///
-    /// As branching is a zero sum action, calling this method implicitly
-    /// contains a negation of the items that are being branched.
-    ///
-    /// # Errors
-    ///
-    /// This functions may fail if the local path configurations are not
-    /// set correctly. Serialization, and interactions with the file
-    /// system may fail for the usual reasons as well.
-    ///
-    fn branch_selected_items(&mut self, branch: Brn) -> Result<()> {
-        let branching_items = self.get_selected_items();
+    /// This function will return the new branch name for the items split.
+    fn new_branch_from_unselected(&self) -> Result<Branch> {
+        let branch = gen_pw();
+        let branching_items = self.get_unselected_items();
         let negated_items = branching_items.as_negated();
-        let root = match &self.branch {
-            Some(ref name) => name,
-            None => bail!("Can't branch without a root!"),
-        };
 
-        branching_items.serialize_and_write(root, Some(branch), LOCALDIR)?;
-        self.adjust_root(negated_items)
+        branching_items.serialize_and_write(&branch, LOCALDIR)?;
+        Status::mark(&Status::Open, STATUSDIR, &branch)?;
+
+        // Need a branch to actually move from.
+        if let Some(current_branch) = &self.current_branch {
+            // Write our negated items to the current branch...
+            negated_items.serialize_and_write(&current_branch, LOCALDIR)?;
+            // Then return the new branch.
+            Ok(branch)
+        } else {
+            Err(anyhow!("Not currently on a branch."))
+        }
     }
 
-    /// Return the currently selected items being shown in the gui.
-    fn get_selected_items(&self) -> Vec<Entry> {
-        let all_fnskus = self
-            .items
-            .iter()
-            .map(|x| x.get_fnsku().to_string())
-            .collect::<HashSet<_>>();
-        let diff = all_fnskus.difference(&self.unselected).collect::<Vec<_>>();
+    /// Returns a clone of all of the items that are currently not selected.
+    ///
+    /// You probably mean to use [`Self::new_branch_from_unselected`].
+    fn get_unselected_items(&self) -> Vec<Entry> {
+        let unsel = self.unselected.clone();
         self.items
-            .clone()
-            .into_iter()
-            .filter(|x| diff.iter().any(|y| x.get_fnsku() == y.as_str()))
-            .collect::<Vec<_>>()
+            .iter()
+            .filter_map(|x| {
+                let fnsku = x.get_fnsku();
+                unsel.contains(fnsku).then_some(x.clone())
+            })
+            .collect()
     }
 
     /// Fill the Ui with a grid, displaying sums of the passed entries.
@@ -406,7 +421,7 @@ impl Gui {
             ui.end_row();
 
             sums.into_iter()
-                .filter(|entry| *entry.get_units() > 0)
+                .filter(|entry| entry.get_units() > 0)
                 .for_each(|entry| {
                     let fnsku = entry.get_fnsku();
                     // When the fnsku is NOT in the map, display check.
