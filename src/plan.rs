@@ -1,6 +1,6 @@
 pub mod status;
 
-use crate::{Brn, Fnsku, Rut, TreeJson};
+use crate::{Brn, Fnsku, TreeJson};
 use anyhow::Result;
 use std::{
     collections::{HashMap, HashSet},
@@ -46,24 +46,15 @@ pub trait Plan {
     ///
     /// Additionally, serialization can fail prior to a write occurring, this
     /// will return an error as well.
-    fn serialize_and_write<P>(&self, trunk: Rut, branch: Option<Brn>, path: P) -> Result<uuid::Uuid>
+    fn serialize_and_write<P>(&self, branch: Brn, path: P) -> Result<()>
     where
         P: AsRef<Path>,
     {
-        let full_tree = if let Some(branch_name) = branch {
-            format!("{trunk}~{branch_name}")
-        } else {
-            trunk.to_string()
-        };
-
         let uuid = Uuid::new_v4();
-
-        let s = path.as_ref().display();
-        let file_name = format!("{s}{full_tree}_{uuid}.json");
+        let p = path.as_ref().display();
+        let file_name = format!("{p}{branch}_{uuid}.json");
         let json = self.serialize()?;
-
-        std::fs::write(file_name, json)?;
-        Ok(uuid)
+        Ok(std::fs::write(file_name, json)?)
     }
 
     /// Serialize [`Self`] into Json format.
@@ -202,6 +193,22 @@ pub trait Plan {
         // Fold each entry with equal skus into each other.
         self.entries().into_iter().fold(HashMap::new(), fold)
     }
+
+    /// Returns the sum of all units in [`Self`].
+    fn units(&self) -> i32 {
+        self.entries()
+            .get_as_sums()
+            .into_iter()
+            .map(|x| x.get_units())
+            .sum()
+    }
+
+    fn get_case_named(&self, case_name: &str) -> Vec<Entry> {
+        self.entries()
+            .into_iter()
+            .filter(|x| x.get_id().eq(case_name))
+            .collect::<Vec<_>>()
+    }
 }
 
 impl Plan for Vec<Entry> {
@@ -302,8 +309,8 @@ impl Entry {
         &self.condition
     }
 
-    pub fn get_units(&self) -> &i32 {
-        &self.units
+    pub fn get_units(&self) -> i32 {
+        self.units
     }
 
     pub fn get_total_pounds(&self) -> &Option<f32> {
@@ -457,7 +464,7 @@ mod tests {
             .pop()
             .unwrap_or_default();
 
-        assert_eq!(value.get_units(), &27);
+        assert_eq!(value.get_units(), 27);
     }
 
     #[test]
