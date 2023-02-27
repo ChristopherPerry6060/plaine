@@ -184,7 +184,8 @@ impl Gui {
                 ui.label(status);
                 if ui.small_button("Select").clicked() {
                     // This is not a great place to do this.
-                    self.load_branch(&name);
+                    self.refresh();
+                    self.switch_to_branch(&name);
                 };
                 ui.end_row();
             });
