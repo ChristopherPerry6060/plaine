@@ -1,6 +1,10 @@
 #![windows_subsystem = "windows"]
 #![allow(dead_code, unused_imports)]
 
+const CHECKDIR: &'static str = ".local/CHECK/";
+const STATUSDIR: &'static str = ".local/STATUS/";
+const LOCALDIR: &'static str = ".local/";
+
 mod instruct;
 use anyhow::{anyhow, bail, Result};
 use eframe::{
@@ -323,8 +327,6 @@ impl Gui {
             return;
         };
         let path = self.config.local_dir();
-        let trunk = gen_pw() + "_";
-        if let Ok(_) = items.serialize_and_write(&trunk, None, path) {
             self.load_branch(&trunk);
         };
     }
