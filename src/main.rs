@@ -47,11 +47,40 @@ impl eframe::App for Gui {
     }
 }
 
-#[derive(Default, Debug)]
+impl TryFrom<CheckEntry> for Vec<Entry> {
+    type Error = anyhow::Error;
+
+    fn try_from(value: CheckEntry) -> std::result::Result<Self, Self::Error> {
+        let fnsku = value.fnsku;
+        let upc = value.upc;
+        let units_per_case = value.units_per_case;
+        let total_cases = value.cases;
+        let mut entry = Entry::default();
+        if fnsku.is_empty() {
+            bail!("Fnsku cannot be empty.");
+        };
+        if units_per_case.eq(&0) {
+            bail!("Units per case cannot be zero.");
+        };
+        if total_cases.eq(&0) {
+            bail!("Total cases cannot be zero.");
+        };
+
+        let cleaned_units: i32 = units_per_case.try_into()?;
+        let cleaned_upc = upc.is_empty().then_some(upc);
+        entry.set_upc(cleaned_upc);
+        entry.set_fnsku(fnsku);
+        entry.set_units(cleaned_units);
+        let plan = (0..total_cases).map(|_| entry.clone()).collect();
+        Ok(plan)
+    }
+}
+#[derive(Default, Debug, Clone)]
 struct CheckEntry {
     fnsku: String,
     upc: String,
-    units: u32,
+    units_per_case: u32,
+    cases: u32,
 }
 
 /// The Plaine application data.
