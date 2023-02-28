@@ -348,6 +348,13 @@ impl Gui {
 
         ui.separator();
         if ui.button("Submit").clicked() {
+            // FIXME: This could just be a method on the
+            // CheckEntry struct
+            //
+            // Only clear current input when conversion to Entry
+            // does not fail.
+            //
+            // submit_check_entry clones the current input from the reference.
             if let Err(err) = Gui::submit_check_entry(input, branch) {
                 self.check_entry_error = Some(err);
             } else {
@@ -390,6 +397,15 @@ impl Gui {
         Ok(())
     }
 
+    /// Submit the `input` by cloning its current contents and writing to a file.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// * `input` fails it convesrion into [`Entry`] by call of `TryFrom`.
+    /// * Serializing the result of the conversion fails.
+    /// * Writing the serialized json to the filesystem fails (`Plan::serialize_and_write`).
+    ///
     fn submit_check_entry(input: &CheckEntry, branch: String) -> Result<(), anyhow::Error> {
         let entry_as_plan = Vec::<Entry>::try_from(input.to_owned())?;
         entry_as_plan.serialize_and_write(&branch, CHECKDIR)?;
