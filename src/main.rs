@@ -586,8 +586,13 @@ impl Gui {
             loose_items_case_id.contains(&case_id)
         });
 
+        let branch = self
+            .current_branch
+            .clone()
+            .ok_or(anyhow!("Not on a branch"))?;
         packed.extend(loose.into_iter());
         let s = serde_json::to_string(&packed)?;
-        Ok(std::fs::write(BOXCONTENTS, s)?)
+        let path = format!("{BOXCONTENTS}{branch}-FlatBoxContents.json");
+        Ok(std::fs::write(path, s)?)
     }
 }
