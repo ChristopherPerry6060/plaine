@@ -284,7 +284,7 @@ impl Gui {
         };
         // CLOSED SHIPMENT
         if matches!(current_status, Status::Check) && ui.button("Start Check").clicked() {
-            self.prep_check();
+            self.prep_check().ok()?;
         };
         if self.in_check {
             self.run_check(current_branch.to_owned(), ui);
@@ -292,23 +292,30 @@ impl Gui {
         Some(())
     }
 
-    fn prep_check(&mut self) {
-        self.in_check = true;
-        let check_dir = std::fs::read_dir(CHECKDIR).expect("Read Checks");
+    /// Pulls the local check entries into memory
+    fn prep_check(&mut self) -> Result<()> {
+        let our_branch = self
+            .current_branch
+            .as_ref()
+            .ok_or(anyhow!("Not on a branch"))?;
+
+        let check_dir = std::fs::read_dir(CHECKDIR)?;
         let reads = check_dir.filter_map(|dir| dir.ok());
+
         let check_dir_files = reads.map(|x| (x.path(), x.file_name()));
-        let branch_and_check_pairs = check_dir_files.filter_map(|(p, name)| {
+
+        let our_checks = check_dir_files.filter_map(|(p, name)| {
             let str = read_to_string(p).ok()?;
             let check_entries: Vec<Entry> = serde_json::from_str(&str).ok()?;
             let (branch, _) = name.to_str()?.split_once('_')?;
-            Some((branch.to_string(), check_entries))
+            our_branch.eq(branch).then_some(check_entries)
         });
-        let current_branch = self.current_branch.as_ref();
-        let filtered_to_this_branch =
-            branch_and_check_pairs.filter(|(branch, _)| current_branch == Some(branch));
-        filtered_to_this_branch.for_each(|(_, entries)| {
+
+        our_checks.for_each(|entries| {
             self.check_memory.extend_from_slice(&entries);
         });
+        self.in_check = true;
+        Ok(())
     }
 
     fn run_check(&mut self, branch: Branch, ui: &mut Ui) {
