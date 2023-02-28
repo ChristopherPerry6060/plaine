@@ -318,8 +318,8 @@ impl TryFrom<GDriveEntry> for Vec<Entry> {
                     bail!("Expect 'Total Qt' to be evenly divisible by 'Case Qt' in {value:#?}.");
                 };
                 let length = value.case_length.unwrap_or_default();
-                let width = value.case_length.unwrap_or_default();
-                let height = value.case_length.unwrap_or_default();
+                let width = value.case_width.unwrap_or_default();
+                let height = value.case_height.unwrap_or_default();
                 let dims = [length, width, height];
 
                 let check_dims = if dims.iter().all(|x| x > &0.0) {
