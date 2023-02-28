@@ -68,7 +68,7 @@ impl TryFrom<CheckEntry> for Vec<Entry> {
         };
 
         let cleaned_units: i32 = units_per_case.try_into()?;
-        let cleaned_upc = upc.is_empty().then_some(upc);
+        let cleaned_upc = (!upc.is_empty()).then_some(upc);
         entry.set_upc(cleaned_upc);
         entry.set_fnsku(fnsku);
         entry.set_units(cleaned_units);
