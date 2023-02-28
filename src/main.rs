@@ -235,6 +235,11 @@ impl Gui {
             };
         };
 
+        if ui.button("Gen Confirmation File").clicked() {
+            if let Err(err) = self.output_confirmation_file() {
+                self.error_stack.push(err);
+            };
+        };
         if ui.button("Upload Google Drive Plan").clicked() {
             match self.legacy_button() {
                 Err(err) => self.error_stack.push(err),
