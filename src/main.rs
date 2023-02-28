@@ -283,8 +283,10 @@ impl Gui {
             self.show_current_branch_contents(ui);
         };
         // CLOSED SHIPMENT
-        if matches!(current_status, Status::Check) && ui.button("Start Check").clicked() {
-            self.prep_check().ok()?;
+        if matches!(current_status, Status::Check) && !self.in_check {
+            if ui.button("Start Check").clicked() {
+                self.prep_check().ok()?;
+            };
         };
         if self.in_check {
             self.run_check(current_branch.to_owned(), ui).ok()?;
