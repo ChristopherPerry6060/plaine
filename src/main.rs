@@ -6,6 +6,7 @@ const LOCALDIR: &str = ".local/";
 const BOXCONTENTS: &str = "FlatBoxContents/";
 const CONFIRMATION: &str = "Confirmations/";
 
+const AMZ_STA_LINK: &str   = "https://sellercentral.amazon.com/fba/sendtoamazon/confirm_content_step?wf=wfae6faceb-b372-4974-b144-19d590650066";
 use anyhow::{anyhow, bail, Result};
 use eframe::{
     egui::{self, CentralPanel, Grid, SidePanel, Ui},
@@ -41,6 +42,7 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         SidePanel::left("branch-panel").show(ctx, |ui| self.show_branch_list(ui));
         CentralPanel::default().show(ctx, |ui| {
+            ui.hyperlink_to("Upload Files Go Here!", AMZ_STA_LINK);
             if ui.button("Reset App").clicked() {
                 *self = Gui::default();
             };
