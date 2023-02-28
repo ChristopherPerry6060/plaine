@@ -348,7 +348,11 @@ impl Gui {
 
         ui.separator();
         if ui.button("Submit").clicked() {
-            self.submit_check_entry(branch)?;
+            if let Err(err) = Gui::submit_check_entry(input, branch) {
+                self.check_entry_error = Some(err);
+            } else {
+                *input = CheckEntry::default();
+            };
         };
         if ui.button("Clear Fields").clicked() {
             *input = CheckEntry::default();
@@ -386,12 +390,8 @@ impl Gui {
         Ok(())
     }
 
-    fn submit_check_entry(
-        input: &mut CheckEntry,
-        branch: String,
-    ) -> Result<(), anyhow::Error> {
-        let item_clone = input.to_owned();
-        let entry_as_plan = Vec::<Entry>::try_from(item_clone)?;
+    fn submit_check_entry(input: &CheckEntry, branch: String) -> Result<(), anyhow::Error> {
+        let entry_as_plan = Vec::<Entry>::try_from(input.to_owned())?;
         entry_as_plan.serialize_and_write(&branch, CHECKDIR)?;
         Ok(())
     }
