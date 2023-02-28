@@ -346,6 +346,21 @@ impl Gui {
             ui.end_row();
         });
 
+        ui.separator();
+        if ui.button("Submit").clicked() {
+            self.submit_check_entry(branch)?;
+        };
+        if ui.button("Clear Fields").clicked() {
+            *input = CheckEntry::default();
+        };
+        ui.separator();
+
+        if let Some(error_message) = &self.check_entry_error {
+            let err_string = error_message.to_string();
+            ui.label(err_string);
+        };
+        ui.separator();
+
         Grid::new("check-file").show(ui, |ui| {
             ui.label("Fnsku");
             ui.label("Units Checked");
@@ -367,13 +382,9 @@ impl Gui {
                 ui.end_row();
             });
         });
-        if !ui.button("Submit").clicked() {
-            return Ok(());
-        };
 
-        if ui.button("Clear Fields").clicked() {
-            *input = CheckEntry::default();
-        };
+        Ok(())
+    }
 
         if let Some(error_message) = &self.check_entry_error {
             let err_string = error_message.to_string();
