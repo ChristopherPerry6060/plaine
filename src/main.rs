@@ -39,6 +39,49 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         SidePanel::left("branch-panel").show(ctx, |ui| self.show_branch_list(ui));
         CentralPanel::default().show(ctx, |ui| {
+            if ui.button("Make Flat Box Contents").clicked() {
+                let clone = self
+                    .items
+                    .entries()
+                    .as_group_by_case()
+                    .into_values()
+                    .flatten()
+                    .collect::<Vec<_>>();
+                let mut with_msku: Vec<_> = clone
+                    .into_iter()
+                    .filter(|x| x.get_msku().is_some())
+                    .collect();
+
+                with_msku.sort_by_key(|entry| {
+                    let mut dimensions = entry.get_case_dimensions().unwrap_or_default();
+                    let better_dims: Vec<u32> = dimensions.into_iter().map(|x| x as u32).collect();
+                    (
+                        entry.get_msku().to_owned(),
+                        entry.get_units().to_owned(),
+                        better_dims.to_owned(),
+                        entry.get_total_pounds().map(|x| x as u32),
+                    )
+                });
+                let other_clone = self
+                    .items
+                    .multi_fnsku_cases()
+                    .into_iter()
+                    .map(|x| x.get_id().to_string())
+                    .collect::<Vec<_>>();
+
+                let (loose, mut packed): (Vec<Entry>, Vec<Entry>) =
+                    with_msku.into_iter().partition(|x| {
+                        let case_id = x.get_id().to_string();
+                        other_clone.contains(&case_id)
+                    });
+
+                packed.extend(loose.into_iter());
+
+
+                let s = serde_json::to_string(&packed).unwrap();
+                std::fs::write("test_lol.json", s).unwrap();
+
+            };
             if ui.button("Reset App").clicked() {
                 *self = Gui::default();
             };
@@ -302,6 +345,7 @@ impl Gui {
             self.check_memory.extend_from_slice(&entries);
         });
     }
+
     fn run_check(&mut self, branch: Branch, ui: &mut Ui) {
         let mut memory = self.check_memory.get_as_sums();
         let current_check_item = &mut self.check_entry_state;
