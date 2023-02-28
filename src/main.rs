@@ -287,7 +287,7 @@ impl Gui {
             self.prep_check().ok()?;
         };
         if self.in_check {
-            self.run_check(current_branch.to_owned(), ui);
+            self.run_check(current_branch.to_owned(), ui).ok()?;
         };
         Some(())
     }
@@ -319,47 +319,68 @@ impl Gui {
     }
 
     /// Runs the check in the central panel.
-    fn run_check(&mut self, branch: Branch, ui: &mut Ui) {
+    fn run_check(&mut self, branch: Branch, ui: &mut Ui) -> Result<()> {
         let mut memory = self.check_memory.get_as_sums();
-        let current_check_item = &mut self.check_entry_state;
-        let _ = &self.items.clone();
+        let input = &mut self.check_entry_state;
 
+        // Short by fnsku so everything stays still in the ui.
         memory.sort_unstable_by_key(|x| x.get_fnsku().to_string());
 
-        ui.label("Fnsku:");
-        ui.text_edit_singleline(&mut current_check_item.fnsku);
-        ui.label("UPC:");
-        ui.text_edit_singleline(&mut current_check_item.upc);
+        Grid::new("checking").num_columns(2).show(ui, |ui| {
+            ui.label("Enter Fnsku");
+            ui.text_edit_singleline(&mut input.fnsku);
+            ui.end_row();
 
-        ui.label("Units Per Case:");
-        ui.add(egui::DragValue::new(&mut current_check_item.units_per_case));
+            ui.label("Enter Upc:");
+            ui.text_edit_singleline(&mut input.upc);
+            ui.end_row();
 
-        ui.label("Cases:");
-        ui.add(egui::DragValue::new(&mut current_check_item.cases));
+            ui.label("Units/Case");
+            ui.add(egui::DragValue::new(&mut input.units_per_case));
+            ui.end_row();
 
-        let submit = ui.button("Submit Item");
+            ui.label("Number of Cases:");
+            ui.add(egui::DragValue::new(&mut input.cases));
+            ui.end_row();
+        });
 
         Grid::new("check-file").show(ui, |ui| {
-            ui.label("Scanned Fnskus");
+            ui.label("Fnsku");
             ui.label("Units Checked");
+            ui.label("Title");
             ui.end_row();
-            memory.into_iter().for_each(|x| {
-                ui.label(x.get_fnsku());
-                ui.label(x.get_units().to_string());
+
+            memory.into_iter().for_each(|prev| {
+                let fnsku = prev.get_fnsku();
+                let title = self
+                    .items
+                    .iter()
+                    .find(|branch| branch.str_fnsku() == fnsku)
+                    .map(|x| x.str_title())
+                    .unwrap_or_default();
+
+                ui.label(fnsku);
+                ui.label(title);
+                ui.label(prev.get_units().to_string());
                 ui.end_row();
             });
         });
-        if !submit.clicked() {
-            return;
+        if !ui.button("Submit").clicked() {
+            return Ok(());
         };
+
+        if ui.button("Clear Fields").clicked() {
+            *input = CheckEntry::default();
+        };
+
         if let Some(error_message) = &self.check_entry_error {
             let err_string = error_message.to_string();
             ui.label(err_string);
         };
-        let item_clone = current_check_item.to_owned();
+        let item_clone = input.to_owned();
         match Vec::<Entry>::try_from(item_clone) {
             Ok(entry_as_plan) => {
-                *current_check_item = CheckEntry::default();
+                *input = CheckEntry::default();
                 entry_as_plan
                     .serialize_and_write(&branch, CHECKDIR)
                     .expect("Serialize check entry.");
@@ -369,6 +390,7 @@ impl Gui {
                 self.check_entry_error = Some(err);
             }
         };
+        Ok(())
     }
 
     /// Show a file dialog so a google drive sheet can be uploaded.
