@@ -137,6 +137,58 @@ pub trait Plan {
             })
     }
 
+
+
+    /// This function returns the entries that "Loose".
+    ///
+    /// This is determined by folding all entries by their case id and filtering
+    /// out any case ids that do not contain more than 1 fnsku.
+    ///
+    /// The inverse of this function is [`Self::single_fnsku_cases`].
+    fn multi_fnsku_cases(&self) -> Vec<Entry> {
+        let case_ids_with_one_fnsku = self
+            .as_folded_cases()
+            .into_iter()
+            .filter_map(|(caseid, entries)| entries.get_as_sums().len().gt(&1).then_some(caseid))
+            .collect::<Vec<_>>();
+        self.entries()
+            .into_iter()
+            .filter(|x| {
+                let case_id = x.get_id().to_string();
+                case_ids_with_one_fnsku.contains(&case_id)
+            })
+            .collect()
+    }
+
+    /// This function returns the entries that "Packed".
+    ///
+    /// This is determined by folding all entries by their case id and filtering
+    /// out any case ids that do not contain a single fnsku.
+    ///
+    /// The inverse of this function is [`Self::single_fnsku_cases`].
+    fn single_fnsku_cases(&self) -> Vec<Entry> {
+        let case_ids_with_one_fnsku = self
+            .as_folded_cases()
+            .into_iter()
+            .filter_map(|(caseid, entries)| entries.get_as_sums().len().eq(&1).then_some(caseid))
+            .collect::<Vec<_>>();
+        self.entries()
+            .into_iter()
+            .filter(|x| {
+                let case_id = x.get_id().to_string();
+                case_ids_with_one_fnsku.contains(&case_id)
+            })
+            .collect()
+    }
+
+    /// A convenience function for determining if the [`Self`] is single.
+    ///
+    /// This will call [`Self::multi_fnsku_cases`] and will return true
+    /// if the result of that function is an empty vector.
+    fn is_single(&self) -> bool {
+        self.multi_fnsku_cases().is_empty()
+    }
+
     /// Return the total cases that [`Self`] has seen.
     ///
     /// As the internal of [`Self`] is akin to a ledger, it may have
@@ -499,6 +551,7 @@ mod tests {
         entry1.set_units(12);
 
         let mut entry2 = entry1.clone();
+        entry2.set_fnsku("something_else".to_string());
         entry2.set_units(20);
 
         let plan = vec![entry1, entry2];
