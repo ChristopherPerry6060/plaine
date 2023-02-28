@@ -178,7 +178,10 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
             item.set_condition(Some(condition));
         };
 
-        if let Some(found) = alr_vec.iter().find(|row| &row.seller_sku == item.get_msku()) {
+        if let Some(found) = alr_vec
+            .iter()
+            .find(|row| &row.seller_sku == item.get_msku())
+        {
             let title = found.item_name.clone();
             let upc = found.product_id.clone();
             item.set_title(title);
@@ -314,6 +317,17 @@ impl TryFrom<GDriveEntry> for Vec<Entry> {
                 if !matches!(units.checked_rem(per_case), Some(0)) {
                     bail!("Expect 'Total Qt' to be evenly divisible by 'Case Qt' in {value:#?}.");
                 };
+                let length = value.case_length.unwrap_or_default();
+                let width = value.case_length.unwrap_or_default();
+                let height = value.case_length.unwrap_or_default();
+                let dims = [length, width, height];
+
+                let check_dims = if dims.iter().all(|x| x > &0.0) {
+                    Some(dims)
+                } else {
+                    None
+                };
+
                 let cases = units.checked_div(per_case).unwrap_or_default();
                 if cases.eq(&0) {
                     bail!("Expected {value:#?} to not be zero cases.");
@@ -321,6 +335,7 @@ impl TryFrom<GDriveEntry> for Vec<Entry> {
                 let case_weight = value.case_weight;
                 for _ in 0..cases {
                     let mut entry = Entry::default();
+                    entry.set_dimensions(check_dims);
                     entry.set_fnsku(fnsku.clone());
                     entry.set_units(per_case as i32);
                     entry.set_id(gen_pw_uuid());

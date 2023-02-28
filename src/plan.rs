@@ -1,4 +1,6 @@
-use crate::{Brn, Fnsku, TreeJson, Rut};
+pub mod status;
+
+use crate::{Brn, Fnsku, TreeJson};
 use anyhow::Result;
 use std::{
     collections::{HashMap, HashSet},
@@ -44,29 +46,15 @@ pub trait Plan {
     ///
     /// Additionally, serialization can fail prior to a write occurring, this
     /// will return an error as well.
-    fn serialize_and_write<P>(
-        &self,
-        trunk: Rut,
-        branch: Option<Brn>,
-        path: P,
-    ) -> Result<uuid::Uuid>
+    fn serialize_and_write<P>(&self, branch: Brn, path: P) -> Result<()>
     where
         P: AsRef<Path>,
     {
-        let full_tree = if let Some(branch_name) = branch {
-            format!("{trunk}~{branch_name}")
-        } else {
-            trunk.to_string()
-        };
-
         let uuid = Uuid::new_v4();
-
-        let s = path.as_ref().display();
-        let file_name = format!("{s}{full_tree}_{uuid}.json");
+        let p = path.as_ref().display();
+        let file_name = format!("{p}{branch}_{uuid}.json");
         let json = self.serialize()?;
-
-        std::fs::write(file_name, json)?;
-        Ok(uuid)
+        Ok(std::fs::write(file_name, json)?)
     }
 
     /// Serialize [`Self`] into Json format.
@@ -149,6 +137,58 @@ pub trait Plan {
             })
     }
 
+
+
+    /// This function returns the entries that "Loose".
+    ///
+    /// This is determined by folding all entries by their case id and filtering
+    /// out any case ids that do not contain more than 1 fnsku.
+    ///
+    /// The inverse of this function is [`Self::single_fnsku_cases`].
+    fn multi_fnsku_cases(&self) -> Vec<Entry> {
+        let case_ids_with_one_fnsku = self
+            .as_folded_cases()
+            .into_iter()
+            .filter_map(|(caseid, entries)| entries.get_as_sums().len().gt(&1).then_some(caseid))
+            .collect::<Vec<_>>();
+        self.entries()
+            .into_iter()
+            .filter(|x| {
+                let case_id = x.get_id().to_string();
+                case_ids_with_one_fnsku.contains(&case_id)
+            })
+            .collect()
+    }
+
+    /// This function returns the entries that "Packed".
+    ///
+    /// This is determined by folding all entries by their case id and filtering
+    /// out any case ids that do not contain a single fnsku.
+    ///
+    /// The inverse of this function is [`Self::single_fnsku_cases`].
+    fn single_fnsku_cases(&self) -> Vec<Entry> {
+        let case_ids_with_one_fnsku = self
+            .as_folded_cases()
+            .into_iter()
+            .filter_map(|(caseid, entries)| entries.get_as_sums().len().eq(&1).then_some(caseid))
+            .collect::<Vec<_>>();
+        self.entries()
+            .into_iter()
+            .filter(|x| {
+                let case_id = x.get_id().to_string();
+                case_ids_with_one_fnsku.contains(&case_id)
+            })
+            .collect()
+    }
+
+    /// A convenience function for determining if the [`Self`] is single.
+    ///
+    /// This will call [`Self::multi_fnsku_cases`] and will return true
+    /// if the result of that function is an empty vector.
+    fn is_single(&self) -> bool {
+        self.multi_fnsku_cases().is_empty()
+    }
+
     /// Return the total cases that [`Self`] has seen.
     ///
     /// As the internal of [`Self`] is akin to a ledger, it may have
@@ -196,14 +236,30 @@ pub trait Plan {
                 acc
             } else {
                 // New skus can be inserted
-                let id = entry.get_id().to_string();
-                acc.insert(id, entry.units).expect("New hashmap key");
+                let id = entry.get_fnsku().to_string();
+                acc.insert(id, entry.units);
                 acc
             }
         };
 
         // Fold each entry with equal skus into each other.
         self.entries().into_iter().fold(HashMap::new(), fold)
+    }
+
+    /// Returns the sum of all units in [`Self`].
+    fn units(&self) -> i32 {
+        self.entries()
+            .get_as_sums()
+            .into_iter()
+            .map(|x| x.get_units())
+            .sum()
+    }
+
+    fn get_case_named(&self, case_name: &str) -> Vec<Entry> {
+        self.entries()
+            .into_iter()
+            .filter(|x| x.get_id().eq(case_name))
+            .collect::<Vec<_>>()
     }
 }
 
@@ -230,10 +286,17 @@ pub struct Entry {
     total_pounds: Option<f32>,
     id: String,
     upc: Option<String>,
-    dimensions: Option<[f32; 3]>,
+    case_dimensions: Option<[f32; 3]>,
     amz_dimensions: Option<[f32; 3]>,
 }
 impl Entry {
+    pub fn get_amz_dimensions(&self) -> Option<[f32; 3]> {
+        self.amz_dimensions
+    }
+    pub fn get_case_dimensions(&self) -> Option<[f32; 3]> {
+        self.case_dimensions
+    }
+
     pub fn set_amz_size(&mut self, set: Option<String>) {
         self.amz_size = set;
     }
@@ -298,8 +361,8 @@ impl Entry {
         &self.condition
     }
 
-    pub fn get_units(&self) -> &i32 {
-        &self.units
+    pub fn get_units(&self) -> i32 {
+        self.units
     }
 
     pub fn get_total_pounds(&self) -> &Option<f32> {
@@ -316,7 +379,7 @@ impl Entry {
 
     pub fn set_dimensions(&mut self, dims: Option<[f32; 3]>) {
         let Some(udims) = dims else {
-            self.dimensions = None;
+            self.case_dimensions = None;
 
             return;
         };
@@ -332,7 +395,7 @@ impl Entry {
         let h = rounded
             .pop()
             .expect("vec made from [f32;3] can be popped 3 times.");
-        self.dimensions = Some([l as f32, w as f32, h as f32]);
+        self.case_dimensions = Some([l as f32, w as f32, h as f32]);
     }
 
     pub fn set_amz_dimensions(&mut self, dims: Option<[f32; 3]>) {
@@ -453,7 +516,7 @@ mod tests {
             .pop()
             .unwrap_or_default();
 
-        assert_eq!(value.get_units(), &27);
+        assert_eq!(value.get_units(), 27);
     }
 
     #[test]
@@ -488,6 +551,7 @@ mod tests {
         entry1.set_units(12);
 
         let mut entry2 = entry1.clone();
+        entry2.set_fnsku("something_else".to_string());
         entry2.set_units(20);
 
         let plan = vec![entry1, entry2];
@@ -505,9 +569,5 @@ mod tests {
 
         let mut entry2 = entry1.clone();
         entry2.set_units(20);
-
-        let plan = vec![entry1, entry2];
-        let neg = plan.as_negated();
-        let _json = neg.serialize().unwrap_or_default();
     }
 }
