@@ -386,23 +386,13 @@ impl Gui {
         Ok(())
     }
 
-        if let Some(error_message) = &self.check_entry_error {
-            let err_string = error_message.to_string();
-            ui.label(err_string);
-        };
+    fn submit_check_entry(
+        input: &mut CheckEntry,
+        branch: String,
+    ) -> Result<(), anyhow::Error> {
         let item_clone = input.to_owned();
-        match Vec::<Entry>::try_from(item_clone) {
-            Ok(entry_as_plan) => {
-                *input = CheckEntry::default();
-                entry_as_plan
-                    .serialize_and_write(&branch, CHECKDIR)
-                    .expect("Serialize check entry.");
-                self.check_entry_error = None;
-            }
-            Err(err) => {
-                self.check_entry_error = Some(err);
-            }
-        };
+        let entry_as_plan = Vec::<Entry>::try_from(item_clone)?;
+        entry_as_plan.serialize_and_write(&branch, CHECKDIR)?;
         Ok(())
     }
 
