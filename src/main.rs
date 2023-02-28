@@ -3,6 +3,7 @@
 const CHECKDIR: &str = ".local/CHECK/";
 const STATUSDIR: &str = ".local/STATUS/";
 const LOCALDIR: &str = ".local/";
+const BOXCONTENTS: &str = "FlatBoxContents/";
 
 use anyhow::{anyhow, bail, Result};
 use eframe::{
