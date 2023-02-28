@@ -369,8 +369,8 @@ impl Gui {
         if let Some(error_message) = &self.check_entry_error {
             let err_string = error_message.to_string();
             ui.label(err_string);
+            ui.separator();
         };
-        ui.separator();
 
         Grid::new("check-file").show(ui, |ui| {
             ui.label("Fnsku");
