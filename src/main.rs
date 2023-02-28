@@ -318,6 +318,7 @@ impl Gui {
         Ok(())
     }
 
+    /// Runs the check in the central panel.
     fn run_check(&mut self, branch: Branch, ui: &mut Ui) {
         let mut memory = self.check_memory.get_as_sums();
         let current_check_item = &mut self.check_entry_state;
