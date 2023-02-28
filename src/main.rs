@@ -4,6 +4,7 @@ const CHECKDIR: &str = ".local/CHECK/";
 const STATUSDIR: &str = ".local/STATUS/";
 const LOCALDIR: &str = ".local/";
 const BOXCONTENTS: &str = "FlatBoxContents/";
+const CONFIRMATION: &str = "Confirmations/";
 
 use anyhow::{anyhow, bail, Result};
 use eframe::{
@@ -294,6 +295,34 @@ impl Gui {
         Some(())
     }
 
+    fn output_confirmation_file(&mut self) -> Result<()> {
+        let our_branch = self
+            .current_branch
+            .as_ref()
+            .ok_or(anyhow!("Not on a branch"))?;
+
+        let check_dir = std::fs::read_dir(CHECKDIR)?;
+        let reads = check_dir.filter_map(|dir| dir.ok());
+
+        let check_dir_files = reads.map(|x| (x.path(), x.file_name()));
+
+        let our_checks = check_dir_files.filter_map(|(p, name)| {
+            let str = read_to_string(p).ok()?;
+            let check_entries: Vec<Entry> = serde_json::from_str(&str).ok()?;
+            let (branch, _) = name.to_str()?.split_once('_')?;
+            our_branch.eq(branch).then_some(check_entries)
+        });
+
+        our_checks.for_each(|entries| {
+            self.check_memory.extend_from_slice(&entries);
+        });
+        let mut check = self.check_memory.clone();
+        let negated_expectation = self.items.as_negated();
+        check.extend_from_slice(&negated_expectation);
+        let x = serde_json::to_string(&check)?;
+        let path = format!("{CONFIRMATION}{our_branch}-Confirmation.json");
+        Ok(std::fs::write(path, x)?)
+    }
     /// Pulls the local check entries into memory
     fn prep_check(&mut self) -> Result<()> {
         let our_branch = self
