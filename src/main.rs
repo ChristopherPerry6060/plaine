@@ -388,22 +388,26 @@ impl Gui {
     ///
     /// This function will return the new branch name for the items split.
     fn new_branch_from_unselected(&self) -> Result<Branch> {
-        let branch = gen_pw();
         let branching_items = self.get_unselected_items();
-        let negated_items = branching_items.as_negated();
+        if branching_items.is_empty() {
+            return Err(anyhow!("Everything is selected, nothing to branch"));
+        };
 
+        let branch = gen_pw();
         branching_items.serialize_and_write(&branch, LOCALDIR)?;
         Status::mark(&Status::Open, STATUSDIR, &branch)?;
 
-        // Need a branch to actually move from.
-        if let Some(current_branch) = &self.current_branch {
-            // Write our negated items to the current branch...
-            negated_items.serialize_and_write(&current_branch, LOCALDIR)?;
-            // Then return the new branch.
-            Ok(branch)
-        } else {
-            Err(anyhow!("Not currently on a branch."))
-        }
+        let our_branch = &self
+            .current_branch
+            .as_ref()
+            .ok_or(anyhow!("Not on a branch."))?;
+
+        // Write our negated items to the current branch
+        let negated_items = branching_items.as_negated();
+        negated_items.serialize_and_write(our_branch, LOCALDIR)?;
+
+        // Return the NEW branch
+        Ok(branch)
     }
 
     /// Returns a clone of all of the items that are currently not selected.
