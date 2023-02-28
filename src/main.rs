@@ -227,6 +227,13 @@ impl Gui {
     }
 
     fn main_window(&mut self, ui: &mut Ui) {
+        let flate = "Gen Flat Box Contents";
+        if self.current_branch.is_some() && ui.button(flate).clicked() {
+            if let Err(err) = self.make_box_contents_fil() {
+                self.error_stack.push(err);
+            };
+        };
+
         if ui.button("Upload Google Drive Plan").clicked() {
             match self.legacy_button() {
                 Err(err) => self.error_stack.push(err),
