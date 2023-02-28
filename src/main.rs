@@ -39,49 +39,6 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         SidePanel::left("branch-panel").show(ctx, |ui| self.show_branch_list(ui));
         CentralPanel::default().show(ctx, |ui| {
-            if ui.button("Make Flat Box Contents").clicked() {
-                let clone = self
-                    .items
-                    .entries()
-                    .as_group_by_case()
-                    .into_values()
-                    .flatten()
-                    .collect::<Vec<_>>();
-                let mut with_msku: Vec<_> = clone
-                    .into_iter()
-                    .filter(|x| x.get_msku().is_some())
-                    .collect();
-
-                with_msku.sort_by_key(|entry| {
-                    let mut dimensions = entry.get_case_dimensions().unwrap_or_default();
-                    let better_dims: Vec<u32> = dimensions.into_iter().map(|x| x as u32).collect();
-                    (
-                        entry.get_msku().to_owned(),
-                        entry.get_units().to_owned(),
-                        better_dims.to_owned(),
-                        entry.get_total_pounds().map(|x| x as u32),
-                    )
-                });
-                let other_clone = self
-                    .items
-                    .multi_fnsku_cases()
-                    .into_iter()
-                    .map(|x| x.get_id().to_string())
-                    .collect::<Vec<_>>();
-
-                let (loose, mut packed): (Vec<Entry>, Vec<Entry>) =
-                    with_msku.into_iter().partition(|x| {
-                        let case_id = x.get_id().to_string();
-                        other_clone.contains(&case_id)
-                    });
-
-                packed.extend(loose.into_iter());
-
-
-                let s = serde_json::to_string(&packed).unwrap();
-                std::fs::write("test_lol.json", s).unwrap();
-
-            };
             if ui.button("Reset App").clicked() {
                 *self = Gui::default();
             };
@@ -490,5 +447,52 @@ impl Gui {
                     };
                 });
         });
+    }
+
+    /// This functions will write out a file for box contents at the path.
+    ///
+    /// Any entries that do not have mskus will not be added to the file.
+    fn make_box_contents_fil(&self) -> anyhow::Result<()> {
+        // This is probably terribly done, but it for sure works
+        // Good enough for now
+        let clone: Vec<Entry> = self
+            .items
+            .entries()
+            .as_group_by_case()
+            .into_values()
+            .flatten()
+            .collect();
+        let mut with_msku: Vec<_> = clone
+            .into_iter()
+            .filter(|x| x.get_msku().is_some())
+            .collect();
+
+        with_msku.sort_by_key(|entry| {
+            let dimensions = entry.get_case_dimensions().unwrap_or_default();
+            let better_dims: Vec<u32> = dimensions.into_iter().map(|x| x as u32).collect();
+            (
+                entry.get_msku().to_owned(),
+                entry.get_units().to_owned(),
+                better_dims.to_owned(),
+                entry.get_total_pounds().map(|x| x as u32),
+            )
+        });
+        let loose_items_case_id: Vec<String> = self
+            .items
+            .multi_fnsku_cases()
+            .into_iter()
+            .map(|x| x.get_id().to_string())
+            .collect();
+
+        // Separate into loose & packed.
+        // Im pretty sure there is a better way to concat to iterators together.
+        let (loose, mut packed): (Vec<Entry>, Vec<Entry>) = with_msku.into_iter().partition(|x| {
+            let case_id = x.get_id().to_string();
+            loose_items_case_id.contains(&case_id)
+        });
+
+        packed.extend(loose.into_iter());
+        let s = serde_json::to_string(&packed)?;
+        Ok(std::fs::write(BOXCONTENTS, s)?)
     }
 }
