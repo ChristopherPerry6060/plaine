@@ -24,8 +24,8 @@ use std::{
 
 fn main() {
     let native_options = NativeOptions {
-        follow_system_theme: true,
-        // default_theme: Theme::Light,
+        follow_system_theme: false,
+        default_theme: eframe::Theme::Light,
         ..Default::default()
     };
     eframe::run_native(
