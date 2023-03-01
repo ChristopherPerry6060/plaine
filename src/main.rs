@@ -6,7 +6,7 @@ const LOCALDIR: &str = ".local/";
 const BOXCONTENTS: &str = "FlatBoxContents/";
 const CONFIRMATION: &str = "Confirmations/";
 
-const AMZ_STA_LINK: &str   = "https://sellercentral.amazon.com/fba/sendtoamazon/confirm_content_step?wf=wfae6faceb-b372-4974-b144-19d590650066";
+const AMZ_STA_LINK: &str = "https://sellercentral.amazon.com/fba/sendtoamazon/";
 use anyhow::{anyhow, bail, Result};
 use eframe::{
     egui::{self, CentralPanel, Grid, SidePanel, Ui},
