@@ -9,7 +9,7 @@ const CONFIRMATION: &str = "Confirmations/";
 const AMZ_STA_LINK: &str = "https://sellercentral.amazon.com/fba/sendtoamazon/";
 use anyhow::{anyhow, bail, Result};
 use eframe::{
-    egui::{self, CentralPanel, Grid, SidePanel, Ui},
+    egui::{self, CentralPanel, Grid, ScrollArea, SidePanel, Ui},
     NativeOptions,
 };
 use plaine::{
@@ -504,46 +504,48 @@ impl Gui {
 
     /// Fill the Ui with a grid, displaying sums of the passed entries.
     fn show_current_branch_contents(&mut self, ui: &mut Ui) {
-        Grid::new("item-grid").striped(true).show(ui, |ui| {
-            let mut sums = self.items.clone().get_as_sums();
-            sums.sort_by_key(|i| i.get_fnsku().to_string());
-            let un_set = &mut self.unselected;
+        ScrollArea::vertical().show(ui, |ui| {
+            Grid::new("item-grid").striped(true).show(ui, |ui| {
+                let mut sums = self.items.clone().get_as_sums();
+                sums.sort_by_key(|i| i.get_fnsku().to_string());
+                let un_set = &mut self.unselected;
 
-            ui.label("");
-            ui.label("mSku");
-            ui.label("Upc*");
-            ui.label("Fnsku");
-            ui.label("Units");
-            ui.label("Amz Size");
-            ui.label("Condition");
-            ui.label("Title");
-            ui.end_row();
+                ui.label("");
+                ui.label("mSku");
+                ui.label("Upc*");
+                ui.label("Fnsku");
+                ui.label("Units");
+                ui.label("Amz Size");
+                ui.label("Condition");
+                ui.label("Title");
+                ui.end_row();
 
-            sums.into_iter()
-                .filter(|entry| entry.get_units() > 0)
-                .for_each(|entry| {
-                    let fnsku = entry.get_fnsku();
-                    // When the fnsku is NOT in the map, display check.
-                    let mut check = !un_set.contains(fnsku);
-                    ui.checkbox(&mut check, "");
+                sums.into_iter()
+                    .filter(|entry| entry.get_units() > 0)
+                    .for_each(|entry| {
+                        let fnsku = entry.get_fnsku();
+                        // When the fnsku is NOT in the map, display check.
+                        let mut check = !un_set.contains(fnsku);
+                        ui.checkbox(&mut check, "");
 
-                    ui.label(entry.str_msku());
-                    ui.label(entry.str_upc());
-                    ui.label(entry.str_fnsku());
-                    ui.label(entry.get_units().to_string());
-                    ui.label(entry.str_amz_size());
-                    ui.label(entry.str_condition());
-                    ui.label(entry.str_title());
-                    ui.end_row();
+                        ui.label(entry.str_msku());
+                        ui.label(entry.str_upc());
+                        ui.label(entry.str_fnsku());
+                        ui.label(entry.get_units().to_string());
+                        ui.label(entry.str_amz_size());
+                        ui.label(entry.str_condition());
+                        ui.label(entry.str_title());
+                        ui.end_row();
 
-                    // When the fnsku is NOT checked, insert.
-                    // When check, remove.
-                    if !check {
-                        un_set.insert(fnsku.to_owned());
-                    } else {
-                        un_set.remove(fnsku);
-                    };
-                });
+                        // When the fnsku is NOT checked, insert.
+                        // When check, remove.
+                        if !check {
+                            un_set.insert(fnsku.to_owned());
+                        } else {
+                            un_set.remove(fnsku);
+                        };
+                    });
+            });
         });
     }
 
