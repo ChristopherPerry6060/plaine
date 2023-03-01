@@ -232,18 +232,6 @@ impl Gui {
     }
 
     fn main_window(&mut self, ui: &mut Ui) {
-        let flate = "Gen Flat Box Contents";
-        if self.current_branch.is_some() && ui.button(flate).clicked() {
-            if let Err(err) = self.make_box_contents_fil() {
-                self.error_stack.push(err);
-            };
-        };
-
-        if ui.button("Gen Confirmation File").clicked() {
-            if let Err(err) = self.output_confirmation_file() {
-                self.error_stack.push(err);
-            };
-        };
         if ui.button("Upload Google Drive Plan").clicked() {
             match self.legacy_button() {
                 Err(err) => self.error_stack.push(err),
@@ -253,11 +241,13 @@ impl Gui {
                 }
             };
         };
+
         self.actions(ui);
     }
 
     fn actions(&mut self, ui: &mut Ui) -> Option<()> {
         let current_branch = &self.current_branch.clone()?;
+        let flate = "Gen Flat Box Contents";
         let status_map = self.branch_statuses.clone();
         let current_status = status_map.get(current_branch)?;
 
@@ -296,6 +286,16 @@ impl Gui {
         if matches!(current_status, Status::Check) && !self.in_check {
             if ui.button("Start Check").clicked() {
                 self.prep_check().ok()?;
+            };
+            if ui.button("Gen Confirmation File").clicked() {
+                if let Err(err) = self.output_confirmation_file() {
+                    self.error_stack.push(err);
+                };
+            };
+            if self.current_branch.is_some() && ui.button(flate).clicked() {
+                if let Err(err) = self.make_box_contents_fil() {
+                    self.error_stack.push(err);
+                };
             };
         };
         if self.in_check {
