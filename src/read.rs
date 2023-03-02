@@ -32,7 +32,7 @@ pub struct MonthlyStorageFees {
     #[serde(alias = "measurement_units")]
     _measurement_units: Option<String>,
     #[serde(alias = "weight")]
-    weight: Option<f32>,
+    _weight: Option<f32>,
     #[serde(alias = "weight_units")]
     _weight_units: Option<String>,
     #[serde(alias = "item_volume")]
