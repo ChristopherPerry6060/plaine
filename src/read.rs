@@ -158,7 +158,6 @@ fn fill_entries(entries: &mut Vec<Entry>) -> Result<(), Error> {
             item.set_title(found.product_name.clone());
             item.set_amz_size(found.product_size_tier.clone());
             item.set_asin(found.asin.clone());
-            item.set_total_pounds(found.weight);
             item.set_amz_size(found.product_size_tier.clone());
 
             let amz_dims = [
