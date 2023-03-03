@@ -264,7 +264,7 @@ impl Gui {
             ui.separator();
         }
 
-        if matches!(current_status, Status::Open) {
+        if matches!(current_status, Status::Open) | matches!(current_status, Status::Shifting) {
             let make_upload_file = ui.button("Make Upload File");
             let remove_unselected = ui.button("Move unselected to new branch");
             let mark_for_checking = ui.button("Mark CURRENT branch for checking");
@@ -297,6 +297,9 @@ impl Gui {
                 if let Err(err) = self.make_box_contents_fil() {
                     self.error_stack.push(err);
                 };
+            };
+            if ui.button("Reopen Branch").clicked() {
+                Status::mark(&Status::Shifting, STATUSDIR, &current_branch).ok()?;
             };
         };
         if self.in_check {
