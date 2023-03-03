@@ -129,17 +129,18 @@ impl Gui {
         let reads = dir.filter_map(|dir| dir.ok());
         let helper = reads.map(|x| (x.path(), x.file_name()));
         let map_helper = helper.filter_map(|(p, name)| {
+            let created = p.metadata().ok()?.created().ok()?;
             let str = read_to_string(p).ok()?;
             let status: Status = serde_json::from_str(&str).ok()?;
             let (branch, _) = name.to_str()?.split_once('_')?;
 
-            Some((branch.to_string(), status))
+            Some((branch.to_string(), status, created))
         });
         let mut hm: HashMap<String, Status> = HashMap::default();
         let mut sorted = map_helper.collect::<Vec<_>>();
 
-        sorted.sort();
-        sorted.into_iter().for_each(|(bn, status)| {
+        sorted.sort_by_key(|x| x.2);
+        sorted.into_iter().for_each(|(bn, status, _)| {
             hm.insert(bn, status);
         });
         if let Some(ref branch) = &self.current_branch.clone() {
