@@ -5,9 +5,9 @@ const STATUSDIR: &str = ".local/STATUS/";
 const LOCALDIR: &str = ".local/";
 const BOXCONTENTS: &str = "FlatBoxContents/";
 const CONFIRMATION: &str = "Confirmations/";
-
 const AMZ_STA_LINK: &str = "https://sellercentral.amazon.com/fba/sendtoamazon/";
-use anyhow::{anyhow, bail, Result};
+
+use anyhow::{anyhow, Result};
 use eframe::{
     egui::{self, CentralPanel, Grid, ScrollArea, SidePanel, Ui},
     NativeOptions,
@@ -18,10 +18,12 @@ use plaine::{
     utils::{self, gen_pw, TrunkFileName},
     write, Branch, Brn,
 };
+
 use rfd::FileDialog;
 use std::{
     collections::{HashMap, HashSet},
     fs::read_to_string,
+    num::NonZeroU32,
 };
 
 fn main() {
@@ -52,51 +54,12 @@ impl eframe::App for Gui {
     }
 }
 
-impl TryFrom<CheckEntry> for Vec<Entry> {
-    type Error = anyhow::Error;
-
-    fn try_from(value: CheckEntry) -> std::result::Result<Self, Self::Error> {
-        let fnsku = value.fnsku;
-        let upc = value.upc;
-        let units_per_case = value.units_per_case;
-        let total_cases = value.cases;
-        let mut entry = Entry::default();
-        if fnsku.is_empty() {
-            bail!("Fnsku cannot be empty.");
-        };
-        if units_per_case.eq(&0) {
-            bail!("Units per case cannot be zero.");
-        };
-        if total_cases.eq(&0) {
-            bail!("Total cases cannot be zero.");
-        };
-
-        let cleaned_units: i32 = units_per_case.try_into()?;
-        let cleaned_upc = if upc.is_empty() { None } else { Some(upc) };
-
-        entry.set_upc(cleaned_upc);
-        entry.set_fnsku(fnsku);
-        entry.set_units(cleaned_units);
-        let plan = (0..total_cases).map(|_| entry.clone()).collect();
-        Ok(plan)
-    }
-}
-#[derive(Default, Debug, Clone)]
-struct CheckEntry {
-    fnsku: String,
-    upc: String,
-    units_per_case: u32,
-    cases: u32,
-}
-
 /// The Plaine application data.
+unimplemented!();
 #[derive(Default, Debug)]
 pub struct Gui {
+    check: Check<Fnsku, CheckQuant>,
     moved_branch_name: Option<Branch>,
-    check_memory: Vec<Entry>,
-    check_entry_state: CheckEntry,
-    check_entry_error: Option<anyhow::Error>,
-    in_check: bool,
     items: Vec<Entry>,
     current_branch: Option<String>,
     branch_list: Vec<TrunkFileName>,
@@ -146,9 +109,8 @@ impl Gui {
             self.switch_to_branch(branch);
         };
         self.branch_statuses = hm;
-        self.check_memory = Vec::default();
-        self.check_entry_state = CheckEntry::default();
-        self.in_check = false;
+        self.check.check_memory = Vec::default();
+        self.check.in_check = false;
         self.moved_branch_name = None;
     }
 
@@ -202,7 +164,7 @@ impl Gui {
     fn switch_to_branch(&mut self, brn: Brn) {
         // Remove client from action state whenever switching
 
-        self.in_check = false;
+        self.check.in_check = false;
         let current_branch_list = &mut self.branch_list;
         let incoming_branch = current_branch_list.iter().filter(|x| {
             let Some((json_file_prefix, _)) = x.split_once('_') else {
@@ -283,7 +245,7 @@ impl Gui {
             self.show_current_branch_contents(ui);
         };
         // CLOSED SHIPMENT
-        if matches!(current_status, Status::Check) && !self.in_check {
+        if matches!(current_status, Status::Check) && !self.check.in_check {
             if ui.button("Start Check").clicked() {
                 self.prep_check().ok()?;
             };
@@ -298,7 +260,7 @@ impl Gui {
                 };
             };
         };
-        if self.in_check {
+        if self.check.in_check {
             self.run_check(current_branch.to_owned(), ui).ok()?;
         };
         Some(())
@@ -323,9 +285,9 @@ impl Gui {
         });
 
         our_checks.for_each(|entries| {
-            self.check_memory.extend_from_slice(&entries);
+            self.check.check_memory.extend_from_slice(&entries);
         });
-        let mut check = self.check_memory.clone();
+        let mut check = self.check.check_memory.clone();
         let negated_expectation = self.items.as_negated();
         check.extend_from_slice(&negated_expectation);
         let x = serde_json::to_string(&check)?;
@@ -352,35 +314,38 @@ impl Gui {
         });
 
         our_checks.for_each(|entries| {
-            self.check_memory.extend_from_slice(&entries);
+            self.check.check_memory.extend_from_slice(&entries);
         });
-        self.in_check = true;
+        self.check.in_check = true;
         Ok(())
     }
 
     /// Runs the check in the central panel.
     fn run_check(&mut self, branch: Branch, ui: &mut Ui) -> Result<()> {
-        let mut memory = self.check_memory.get_as_sums();
-        let input = &mut self.check_entry_state;
+        let mut memory = self.check.check_memory.get_as_sums();
+        let mut fnsku = self.check.fnsku.clone();
+        let mut upc = self.check.upc.clone();
+        let mut units_per_case = self.check.units_per_case.clone();
+        let mut cases = self.check.cases.clone();
 
         // Short by fnsku so everything stays still in the ui.
         memory.sort_unstable_by_key(|x| x.get_fnsku().to_string());
 
         Grid::new("checking").num_columns(2).show(ui, |ui| {
             ui.label("Enter Fnsku");
-            ui.text_edit_singleline(&mut input.fnsku);
+            ui.text_edit_singleline(&mut fnsku);
             ui.end_row();
 
             ui.label("Enter Upc:");
-            ui.text_edit_singleline(&mut input.upc);
+            ui.text_edit_singleline(&mut upc);
             ui.end_row();
 
             ui.label("Units/Case");
-            ui.add(egui::DragValue::new(&mut input.units_per_case));
+            ui.add(egui::DragValue::new(&mut units_per_case));
             ui.end_row();
 
             ui.label("Number of Cases:");
-            ui.add(egui::DragValue::new(&mut input.cases));
+            ui.add(egui::DragValue::new(&mut cases));
             ui.end_row();
         });
 
@@ -393,18 +358,14 @@ impl Gui {
             // does not fail.
             //
             // submit_check_entry clones the current input from the reference.
-            if let Err(err) = Gui::submit_check_entry(input, branch) {
-                self.check_entry_error = Some(err);
-            } else {
-                *input = CheckEntry::default();
-            };
+            todo!();
         };
         if ui.button("Clear Fields").clicked() {
-            *input = CheckEntry::default();
+            todo!()
         };
         ui.separator();
 
-        if let Some(error_message) = &self.check_entry_error {
+        if let Some(error_message) = &self.check.errors {
             let err_string = error_message.to_string();
             ui.label(err_string);
             ui.separator();
@@ -432,21 +393,6 @@ impl Gui {
             });
         });
 
-        Ok(())
-    }
-
-    /// Submit the `input` by cloning its current contents and writing to a file.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if:
-    /// * `input` fails it convesrion into [`Entry`] by call of `TryFrom`.
-    /// * Serializing the result of the conversion fails.
-    /// * Writing the serialized json to the filesystem fails (`Plan::serialize_and_write`).
-    ///
-    fn submit_check_entry(input: &CheckEntry, branch: String) -> Result<(), anyhow::Error> {
-        let entry_as_plan = Vec::<Entry>::try_from(input.to_owned())?;
-        entry_as_plan.serialize_and_write(&branch, CHECKDIR)?;
         Ok(())
     }
 
