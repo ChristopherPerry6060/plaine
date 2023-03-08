@@ -159,9 +159,8 @@ mod tests {
         };
     }
 
-
     #[test]
-    // Sanity check FbaCase trait contains function.
+    // Sanity check FbaCase trait, contains function.
     fn sku_items() {
         let id = Identifier::fnsku("fnsku1234");
         let false_id = Identifier::fnsku("not here");
@@ -170,5 +169,15 @@ mod tests {
 
         assert_eq!(si.contains(&false_id), false);
         assert_eq!(si.contains(&id), true);
+    }
+    #[test]
+    // Sanity check FbaCase trait, units function.
+    fn units() {
+        let id = Identifier::upc("sku123");
+        let false_id = Identifier::asin("not here");
+        let si = SkuItem::new(id.clone(), 32);
+
+        assert_eq!(si.units(&id), 32);
+        assert_ne!(si.units(&false_id), 32);
     }
 }
