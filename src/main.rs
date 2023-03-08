@@ -42,7 +42,7 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         SidePanel::left("branch-panel").show(ctx, |ui| self.show_branch_list(ui));
         CentralPanel::default().show(ctx, |ui| {
-            ui.label("v0.0.02");
+            ui.label("v0.0.3");
             ui.hyperlink_to("Amz Upload Files Go Here!", AMZ_STA_LINK);
             if ui.button("Reset App").clicked() {
                 *self = Gui::default();
