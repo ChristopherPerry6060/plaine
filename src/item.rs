@@ -106,10 +106,10 @@ impl Identifier {
         Identifier::Fnsku(fnsku)
     }
 
-    fn monsku(monsku: &str) -> Self {
-        let monsku = Msku(monsku.to_string());
-        Identifier::Msku(monsku)
     /// Construct an [`Msku`] from a `&str` clone.
+    fn msku(msku: &str) -> Self {
+        let msku = Msku(msku.to_string());
+        Identifier::Msku(msku)
     }
 
     /// Construct an [`Upc`] from a `&str` clone.
