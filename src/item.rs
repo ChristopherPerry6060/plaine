@@ -74,10 +74,9 @@ impl Deref for Upc {
     }
 }
 
-/// A Monsoon Sku.
-struct MonSku(String);
-impl Deref for MonSku {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct Msku(String);
+impl Deref for Msku {
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
@@ -114,6 +113,7 @@ enum Identifier {
     Upc(Upc),
     Fnsku(Fnsku),
     MonSku(MonSku),
+    Msku(Msku),
 }
 
 /// Used with an [`Identifier`] to describe a physical quantity.
