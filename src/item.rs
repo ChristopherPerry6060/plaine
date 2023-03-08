@@ -87,10 +87,9 @@ impl Deref for Msku {
 /// Various codes and skus used to identify physical items.
 enum Identifier {
     Asin(Asin),
-    Upc(Upc),
     Fnsku(Fnsku),
-    MonSku(MonSku),
     Msku(Msku),
+    Upc(Upc),
 }
 
     }
