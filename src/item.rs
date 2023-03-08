@@ -94,11 +94,13 @@ enum Identifier {
 }
 
 impl Identifier {
+    /// Construct an [`Asin`] from a `&str` clone.
     fn asin(asin: &str) -> Self {
         let asin = Asin(asin.to_string());
         Identifier::Asin(asin)
     }
 
+    /// Construct an [`Fnsku`] from a `&str` clone.
     fn fnsku(fnsku: &str) -> Self {
         let fnsku = Fnsku(fnsku.to_string());
         Identifier::Fnsku(fnsku)
@@ -107,8 +109,10 @@ impl Identifier {
     fn monsku(monsku: &str) -> Self {
         let monsku = Msku(monsku.to_string());
         Identifier::Msku(monsku)
+    /// Construct an [`Msku`] from a `&str` clone.
     }
 
+    /// Construct an [`Upc`] from a `&str` clone.
     fn upc(upc: &str) -> Self {
         let upc = Upc(upc.to_string());
         Identifier::Upc(upc)
