@@ -7,6 +7,12 @@ trait FbaCase {
     fn contains(&self, id: &Identifier) -> bool {
         self.contents().into_iter().any(|x| &x.id == id)
     }
+    fn units(&self, id: &Identifier) -> u32 {
+        self.contents()
+            .into_iter()
+            .map(|x| if &x.id == id { x.units.deref() } else { &0 })
+            .sum()
+    }
 }
 
 impl FbaCase for SkuItem<u32> {
