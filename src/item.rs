@@ -129,16 +129,32 @@ impl Identifier {
 #[cfg(test)]
 mod tests {
     use super::{
+        FbaCase,
         Identifier::{self, Asin, Fnsku, Msku, Upc},
         SkuItem,
     };
 
-    // Sanity check the the Identifier variants for deref and equality.k
     #[test]
+    // Sanity check the Identifier variants for deref and equality.
     fn deref_identifier() {
         let asin = Identifier::asin("random-asin");
         if let Identifier::Asin(exp) = asin {
             assert!(&*exp == "random-asin");
+        } else {
+            panic!()
         };
+    }
+
+
+    #[test]
+    // Sanity check FbaCase trait contains function.
+    fn sku_items() {
+        let id = Identifier::fnsku("fnsku1234");
+        let false_id = Identifier::fnsku("not here");
+
+        let si = SkuItem::new(id.clone(), 32);
+
+        assert_eq!(si.contains(&false_id), false);
+        assert_eq!(si.contains(&id), true);
     }
 }
