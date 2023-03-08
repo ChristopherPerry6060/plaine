@@ -31,6 +31,14 @@ impl From<u32> for Units<u32> {
     }
 }
 
+impl Deref for Units<u32> {
+    type Target = u32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// A quantity of [`Units`] and an [`Identifier`]
 #[derive(Clone, Debug)]
 struct SkuItem<T>
