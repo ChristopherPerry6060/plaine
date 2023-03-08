@@ -93,8 +93,26 @@ enum Identifier {
     Upc(Upc),
 }
 
+impl Identifier {
+    fn asin(asin: &str) -> Self {
+        let asin = Asin(asin.to_string());
+        Identifier::Asin(asin)
     }
 
+    fn fnsku(fnsku: &str) -> Self {
+        let fnsku = Fnsku(fnsku.to_string());
+        Identifier::Fnsku(fnsku)
+    }
+
+    fn monsku(monsku: &str) -> Self {
+        let monsku = Msku(monsku.to_string());
+        Identifier::Msku(monsku)
+    }
+
+    fn upc(upc: &str) -> Self {
+        let upc = Upc(upc.to_string());
+        Identifier::Upc(upc)
+    }
 }
 
 #[cfg(test)]
