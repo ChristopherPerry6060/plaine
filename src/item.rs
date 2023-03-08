@@ -84,30 +84,6 @@ impl Deref for Msku {
     }
 }
 
-impl Units for FbaItem {
-    type Num = u32;
-
-    fn quantity(&self) -> Self::Num {
-        self.quantity
-    }
-
-    fn adjust(&mut self, adj: i32) -> Option<Self::Num> {
-        if adj.is_negative() {
-            let checked: u32 = adj.try_into().ok()?;
-            self.quantity.checked_sub(checked)?;
-        } else {
-            let checked: u32 = adj.try_into().ok()?;
-            self.quantity.checked_add(checked)?;
-        };
-        Some(self.quantity())
-    }
-}
-
-struct FbaItem {
-    quantity: u32,
-    identifier: Identifier,
-}
-
 enum Identifier {
     Asin(Asin),
     Upc(Upc),
@@ -116,30 +92,12 @@ enum Identifier {
     Msku(Msku),
 }
 
-/// Used with an [`Identifier`] to describe a physical quantity.
-trait Units
-where
-    Self::Num: Eq,
-{
-    type Num;
-    fn quantity(&self) -> Self::Num;
-    fn adjust(&mut self, adj: i32) -> Option<Self::Num>;
-    fn cases(&self, per_case: u32) -> Result<u32> {
-        self.quantity()
     }
-}
 
-type Result<T> = std::result::Result<T, Error>;
-#[derive(Error, Debug)]
-enum Error {
-    #[error("OverflowAdjustment")]
-    OverflowAdjustment,
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn overflow() {
-        let _x: i32 = 199;
     }
 }
