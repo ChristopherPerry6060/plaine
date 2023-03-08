@@ -10,6 +10,11 @@ trait FbaCase {
     }
 }
 
+impl FbaCase for SkuItem<u32> {
+    fn contents(&self) -> Vec<&SkuItem<u32>> {
+        vec![&self]
+    }
+}
 
 /// Any number type representing physical units.
 #[derive(Clone, Debug)]
@@ -30,6 +35,13 @@ where
     id: Identifier,
     units: Units<T>,
 }
+
+impl SkuItem<u32> {
+    fn new(id: Identifier, units: Units<u32>) -> Self {
+        Self { id, units }
+    }
+}
+
 /// A Fulfillment Network Sku.
 struct Fnsku(String);
 impl Deref for Fnsku {
