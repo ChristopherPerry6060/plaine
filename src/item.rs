@@ -10,6 +10,17 @@ trait FbaCase {
     }
 }
 
+
+/// Any number type representing physical units.
+#[derive(Clone, Debug)]
+struct Units<T: num_traits::Num>(T);
+
+impl From<u32> for Units<u32> {
+    fn from(value: u32) -> Self {
+        Units(value)
+    }
+}
+
 /// A Fulfillment Network Sku.
 struct Fnsku(String);
 impl Deref for Fnsku {
