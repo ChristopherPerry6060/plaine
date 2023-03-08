@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 use std::ops::Deref;
-use thiserror::Error;
 
 /// An interface for searching and manipulating FBA cases containing items.
 trait FbaCase {
