@@ -85,6 +85,7 @@ impl Deref for Msku {
 }
 
 /// Various codes and skus used to identify physical items.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum Identifier {
     Asin(Asin),
     Fnsku(Fnsku),
