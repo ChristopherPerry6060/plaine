@@ -36,8 +36,14 @@ where
 }
 
 impl SkuItem<u32> {
-    fn new(id: Identifier, units: Units<u32>) -> Self {
-        Self { id, units }
+    fn new<N>(id: Identifier, units: N) -> Self
+    where
+        N: Into<Units<u32>>,
+    {
+        Self {
+            id,
+            units: units.into(),
+        }
     }
 }
 
