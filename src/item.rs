@@ -43,6 +43,7 @@ impl SkuItem<u32> {
 }
 
 /// A Fulfillment Network Sku.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct Fnsku(String);
 impl Deref for Fnsku {
     type Target = String;
@@ -53,6 +54,7 @@ impl Deref for Fnsku {
 }
 
 /// An Amazon Standard Identification Number.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct Asin(String);
 impl Deref for Asin {
     type Target = String;
@@ -63,6 +65,7 @@ impl Deref for Asin {
 }
 
 /// A Universal Product Code.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct Upc(String);
 impl Deref for Upc {
     type Target = String;
@@ -75,6 +78,7 @@ impl Deref for Upc {
 /// A Monsoon Sku.
 struct MonSku(String);
 impl Deref for MonSku {
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
