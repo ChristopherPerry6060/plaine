@@ -11,7 +11,7 @@ trait FbaCase {
 
 impl FbaCase for SkuItem<u32> {
     fn contents(&self) -> Vec<&SkuItem<u32>> {
-        vec![&self]
+        vec![self]
     }
 }
 
