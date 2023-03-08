@@ -2,6 +2,14 @@
 use std::ops::Deref;
 use thiserror::Error;
 
+/// An interface for searching and manipulating FBA cases containing items.
+trait FbaCase {
+    fn contents(&self) -> Vec<&SkuItem<u32>>;
+    fn contains(&self, id: Identifier) -> bool {
+        self.contents().into_iter().any(|x| x.id == id)
+    }
+}
+
 /// A Fulfillment Network Sku.
 struct Fnsku(String);
 impl Deref for Fnsku {
