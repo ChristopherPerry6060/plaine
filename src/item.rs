@@ -115,8 +115,20 @@ impl Identifier {
     }
 }
 
+#[allow(unused_imports)]
 #[cfg(test)]
 mod tests {
+    use super::{
+        Identifier::{self, Asin, Fnsku, Msku, Upc},
+        SkuItem,
+    };
+
+    // Sanity check the the Identifier variants for deref and equality.k
     #[test]
+    fn deref_identifier() {
+        let asin = Identifier::asin("random-asin");
+        if let Identifier::Asin(exp) = asin {
+            assert!(&*exp == "random-asin");
+        };
     }
 }
