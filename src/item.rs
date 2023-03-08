@@ -21,6 +21,15 @@ impl From<u32> for Units<u32> {
     }
 }
 
+/// A quantity of [`Units`] and an [`Identifier`]
+#[derive(Clone, Debug)]
+struct SkuItem<T>
+where
+    T: num_traits::Unsigned + num_traits::Bounded,
+{
+    id: Identifier,
+    units: Units<T>,
+}
 /// A Fulfillment Network Sku.
 struct Fnsku(String);
 impl Deref for Fnsku {
