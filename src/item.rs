@@ -29,12 +29,18 @@ impl Case for SkuItem<u32> {
 }
 
 /// Any number type representing physical units.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Units<T: num_traits::Num>(T);
 
 impl From<u32> for Units<u32> {
     fn from(value: u32) -> Self {
         Units(value)
+    }
+}
+
+impl AsRef<u32> for Units<u32> {
+    fn as_ref(&self) -> &u32 {
+        &self.0
     }
 }
 
