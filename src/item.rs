@@ -2,8 +2,11 @@
 use std::ops::Deref;
 
 /// An interface for searching and manipulating FBA cases containing items.
-trait FbaCase {
+trait Case {
+    /// Return the contents of [`Self`] as a `Vec` of borrowed [`SkuItem`]s.
     fn contents(&self) -> Vec<&SkuItem<u32>>;
+
+    /// Return true if [`Self`] contains the [`Identifier`].
     fn contains(&self, id: &Identifier) -> bool {
         self.contents().into_iter().any(|x| &x.id == id)
     }
@@ -15,7 +18,7 @@ trait FbaCase {
     }
 }
 
-impl FbaCase for SkuItem<u32> {
+impl Case for SkuItem<u32> {
     fn contents(&self) -> Vec<&SkuItem<u32>> {
         vec![self]
     }
@@ -160,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    // Sanity check FbaCase trait, contains function.
+    // Sanity check Case trait, contains function.
     fn sku_items() {
         let id = Identifier::fnsku("fnsku1234");
         let false_id = Identifier::fnsku("not here");
@@ -171,7 +174,7 @@ mod tests {
         assert_eq!(si.contains(&id), true);
     }
     #[test]
-    // Sanity check FbaCase trait, units function.
+    // Sanity check Case trait, units function.
     fn units() {
         let id = Identifier::upc("sku123");
         let false_id = Identifier::asin("not here");
