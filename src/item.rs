@@ -152,14 +152,9 @@ impl Identifier {
     }
 }
 
-#[allow(unused_imports)]
 #[cfg(test)]
 mod tests {
-    use super::{
-        FbaCase,
-        Identifier::{self, Asin, Fnsku, Msku, Upc},
-        SkuItem,
-    };
+    use super::{Case, Identifier, SkuItem, Units};
 
     #[test]
     // Sanity check the Identifier variants for deref and equality.
