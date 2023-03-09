@@ -185,7 +185,7 @@ mod tests {
         let false_id = Identifier::asin("not here");
         let si = SkuItem::new(id.clone(), 32);
 
-        assert_eq!(si.units(&id), 32);
-        assert_ne!(si.units(&false_id), 32);
+        assert_eq!(si.units(&id), Units::from(32));
+        assert_ne!(si.units(&false_id), Units::from(32));
     }
 }
