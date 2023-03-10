@@ -44,3 +44,20 @@ pub struct Mongo<State = Building> {
     username: String,
 }
 
+impl<State> Default for Mongo<State> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<State> Mongo<State> {
+    pub fn new() -> Self {
+        Self {
+            client: None,
+            database: String::default(),
+            password: String::default(),
+            state: PhantomData,
+            username: String::default(),
+        }
+    }
+}
