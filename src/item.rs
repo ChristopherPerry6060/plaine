@@ -4,74 +4,21 @@ use std::ops::Deref;
 /// An interface for searching and manipulating FBA cases containing items.
 trait Case {
     /// Return the contents of [`Self`] as a `Vec` of borrowed [`SkuItem`]s.
-    fn contents(&self) -> Vec<&SkuItem<u32>>;
+    fn contents(&self) -> Vec<&SkuItem>;
 
     /// Return true if [`Self`] contains the [`Identifier`].
     fn contains(&self, id: &Identifier) -> bool {
         self.contents().into_iter().any(|x| &x.id == id)
     }
-
-    /// Returns the [`Units`] of an [`Identifier`] in [`Self`].
-    fn units(&self, id: &Identifier) -> Units<u32> {
-        let sum: u32 = self
-            .contents()
-            .into_iter()
-            .map(|x| if &x.id == id { x.units.deref() } else { &0 })
-            .sum();
-        Units::from(sum)
-    }
 }
 
-impl Case for SkuItem<u32> {
-    fn contents(&self) -> Vec<&SkuItem<u32>> {
-        vec![self]
-    }
-}
-
-/// Any number type representing physical units.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct Units<T: num_traits::Num>(T);
-
-impl From<u32> for Units<u32> {
-    fn from(value: u32) -> Self {
-        Units(value)
-    }
-}
-
-impl AsRef<u32> for Units<u32> {
-    fn as_ref(&self) -> &u32 {
-        &self.0
-    }
-}
-
-impl Deref for Units<u32> {
-    type Target = u32;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+type Units = u32;
 
 /// A quantity of [`Units`] and an [`Identifier`]
 #[derive(Clone, Debug)]
-struct SkuItem<T>
-where
-    T: num_traits::Unsigned + num_traits::Bounded,
-{
+struct SkuItem {
     id: Identifier,
-    units: Units<T>,
-}
-
-impl SkuItem<u32> {
-    fn new<N>(id: Identifier, units: N) -> Self
-    where
-        N: Into<Units<u32>>,
-    {
-        Self {
-            id,
-            units: units.into(),
-        }
-    }
+    units: Units,
 }
 
 /// A Fulfillment Network Sku.
@@ -154,7 +101,7 @@ impl Identifier {
 
 #[cfg(test)]
 mod tests {
-    use super::{Case, Identifier, SkuItem, Units};
+    use super::Identifier;
 
     #[test]
     // Sanity check the Identifier variants for deref and equality.
@@ -166,26 +113,5 @@ mod tests {
             panic!()
         };
     }
-
-    #[test]
-    // Sanity check Case trait, contains function.
-    fn sku_items() {
-        let id = Identifier::fnsku("fnsku1234");
-        let false_id = Identifier::fnsku("not here");
-
-        let si = SkuItem::new(id.clone(), 32);
-
-        assert_eq!(si.contains(&false_id), false);
-        assert_eq!(si.contains(&id), true);
-    }
-    #[test]
-    // Sanity check Case trait, units function.
-    fn units() {
-        let id = Identifier::upc("sku123");
-        let false_id = Identifier::asin("not here");
-        let si = SkuItem::new(id.clone(), 32);
-
-        assert_eq!(si.units(&id), Units::from(32));
-        assert_ne!(si.units(&false_id), Units::from(32));
-    }
 }
+
