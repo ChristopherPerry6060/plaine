@@ -61,6 +61,36 @@ impl<State> Mongo<State> {
         }
     }
 }
+impl Mongo<Ready> {
+    /// Write an `entry` using [`Self`]'s current configuration.
+    ///
+    /// # Errors
+    ///
+    /// This function can error due to any issues connecting to the
+    /// MongoDb cluster. These errors might be caused by networking issues,
+    /// authentication issues, and any other issues found within the underlying
+    /// [`Client`].
+    ///
+    /// [`Client`]:(mongodb::Client::with_options)
+    pub async fn write_one<T>(&self, entry: T) -> Result<()>
+    where
+        T: MongOne,
+    {
+        if let Some(client) = &self.client {
+            let name = entry.target_collection();
+            let doc = entry.doc()?;
+            client
+                .database(&self.database)
+                .collection::<Document>(&name)
+                .insert_one(doc, None)
+                .await?;
+            Ok(())
+        } else {
+            Err(anyhow!("Expected Client"))
+        }
+    }
+}
+
 impl Mongo<Building> {
     /// Set the database for [`Self`].
     pub fn set_database(&mut self, database: &str) -> &mut Self {
