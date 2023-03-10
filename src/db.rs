@@ -6,6 +6,17 @@ use mongodb::{
 };
 use std::marker::PhantomData;
 
+/// An item that can be serialized to a [`Document`] and stored to Mongo.
+///
+/// [`Document`]:(bson:Document)
+pub trait MongOne {
+    // REFACTOR: There could be a better way to do this. Just be sure to
+    // revisit it at some point.
+    fn target_collection(&self) -> String;
+    fn target_id(&self) -> String;
+    fn doc(&self) -> Result<Document>;
+}
+
 /// Type state pattern used for [`Mongo`].
 #[derive(Debug)]
 pub struct Building;
