@@ -2,7 +2,6 @@ pub mod plan;
 pub mod read;
 pub mod utils;
 pub mod write;
-mod item;
 pub mod db;
 
 /// A [`Tree`] that has been serialized to a Json string.
