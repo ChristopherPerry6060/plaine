@@ -9,7 +9,29 @@ use std::rc::Rc;
 const STYLESHEET: &str = include_str!("../assets/style.css");
 
 // Representation of username and password.
-type Login = Option<(String, String)>;
+#[derive(Props, PartialEq, Default, Clone)]
+struct Creds {
+    user: Option<String>,
+    pass: Option<String>,
+}
+
+impl TryFrom<&Rc<FormData>> for Creds {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Rc<FormData>) -> Result<Self, Self::Error> {
+        let user = value.values.get("user").cloned();
+        let pass = value.values.get("pass").cloned();
+        Ok(Creds { user, pass })
+    }
+}
+
+impl Creds {
+    fn get(&self) -> Option<(&str, &str)> {
+        let user = &self.user.as_ref()?;
+        let pass = &self.pass.as_ref()?;
+        Some((user, pass))
+    }
+}
 
 fn main() {
     let head = format!("<style>{STYLESHEET}</style>");
