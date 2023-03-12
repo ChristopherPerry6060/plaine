@@ -6,21 +6,20 @@ use dioxus_desktop::{launch_cfg, tao::window::Theme, Config, WindowBuilder};
 use plaine::db::Mongo;
 use std::rc::Rc;
 
+const STYLESHEET: &str = include_str!("../assets/style.css");
+
 // Representation of username and password.
 type Login = Option<(String, String)>;
-const STYLESHEET: &str = include_str!("./style.css");
 
 fn main() {
-    let head: String = format!("<style>{STYLESHEET}</style>");
+    let head = format!("<style>{STYLESHEET}</style>");
+
     let win = WindowBuilder::new()
         .with_title("Plaine")
         .with_theme(Some(Theme::Dark));
+
     let cfg = Config::new().with_window(win).with_custom_head(head);
     launch_cfg(App, cfg);
-}
-
-fn GetCssSheet(cx: Scope) -> Element {
-    cx.render(rsx! { style {} })
 }
 
 fn App(cx: Scope) -> Element {
@@ -37,7 +36,6 @@ fn App(cx: Scope) -> Element {
     };
 
     cx.render(rsx! {
-        GetCssSheet {},
         LoginForm {
             user: fuser,
             pass: fpass,
