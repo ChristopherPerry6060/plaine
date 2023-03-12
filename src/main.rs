@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use dioxus_desktop::{launch_cfg, tao::window::Theme, Config, WindowBuilder};
-use plaine::db::Mongo;
+use plaine::db::{Mongo, Ready};
 use std::rc::Rc;
 
 const STYLESHEET: &str = include_str!("../assets/style.css");
@@ -46,28 +46,39 @@ fn main() {
 
 fn App(cx: Scope) -> Element {
     // login is Option<(username, password)>.
-    let login: &UseRef<Login> = use_ref(cx, || None);
-    let fuser = use_state(cx, || "".to_string());
-    let fpass = use_state(cx, || "".to_string());
-    let x = login.with(|inner| inner.clone());
-    let db = use_future(cx, login, |login| async move { get_mongo_items(x).await });
+    let creds = use_state(cx, Creds::default);
 
-    let reset_login_form = move || {
-        fuser.set("".to_string());
-        fpass.set("".to_string());
-    };
+    // I can probably just pass the &UseRef<Creds> instead of cloning
+    let count = use_future(cx, creds, |login| async move {
+        db(&login)
+            .await
+            .unwrap_or_default()
+            .count_docs_in_collection("monsoon")
+            .await
+            .ok()
+    });
 
     cx.render(rsx! {
         LoginForm {
-            user: fuser,
-            pass: fpass,
+            creds: creds,
             on_submit: move |event: Event<FormData>| {
-               login.with_mut(|inner| *inner = build_login(&event.data));
-               reset_login_form();
+               let data = Creds::try_from(&event.data).unwrap_or_default();
+               creds.set(Creds::default());
             },
         },
-        MongoTable { }
+        DocumentCount { count: count },
     })
+}
+
+#[inline_props]
+fn DocumentCount<'a>(cx: Scope, count: &'a UseFuture<Option<u64>>) -> Element {
+    if let Some(number) = count.value()? {
+        cx.render(rsx! {
+            h1 { "{number}" }
+        })
+    } else {
+        None
+    }
 }
 
 /// Component to display a login form with a "User" and "Password" field.
@@ -77,66 +88,31 @@ fn App(cx: Scope) -> Element {
 #[inline_props]
 fn LoginForm<'a>(
     cx: Scope,
-    user: &'a str,
-    pass: &'a str,
+    creds: &'a Creds,
     on_submit: EventHandler<'a, FormEvent>,
 ) -> Element<'a> {
+    let (username, password) = creds.get().to_owned().unwrap_or_default();
+
     cx.render(rsx! {
         form {
             onsubmit: move |event| on_submit.call(event),
             label {r#for: "fuser", "Username: ", },
-            input { r#type: "text", id: "fuser", name: "user", value: "{user}", }, br{},
+            input { r#type: "text", id: "fuser", name: "user", value: "{username}", }, br{},
             label {r#for: "fpass", "Password: ", },
-            input { r#type: "text", id: "fpass", name: "pass", value: "{pass}", }, br{},
+            input { r#type: "text", id: "fpass", name: "pass", value: "{password}", }, br{},
             input { r#type: "submit", },
         },
     })
 }
 
-fn MongoTable(cx: Scope) -> Element {
-    let test_vec = vec![0, 1, 3, 4, 5, 6];
-    cx.render(rsx! {
-        table {
-            tbody {
-                test_vec.into_iter().map(|x| {
-                    let item = x.to_string();
-                    rsx! { tr {
-                        td { "this is data" },
-                        td { "this is other data" },
-                        td { "{item}" },
-                    }}
-                })
-        }}
-    })
-}
-
-async fn get_mongo_items(login: Login) -> Option<()> {
-    let (user, pw) = login?;
-    let db = Mongo::new()
-        .set_user(&user)
-        .set_password(&pw)
-        .set_database(&"")
+async fn db(creds: &Creds) -> anyhow::Result<Mongo<Ready>> {
+    let (user, pw) = creds
+        .get()
+        .ok_or_else(|| anyhow::anyhow!("No Credentials"))?;
+    Mongo::new()
+        .set_user(user)
+        .set_password(pw)
+        .set_database("items")
         .build()
         .await
-        .unwrap();
-    let doc = db
-        .client()
-        .database("items")
-        .collection::<mongodb::bson::Document>("test")
-        .count_documents(None, None)
-        .await
-        .unwrap();
-    println!("herher");
-    None
-}
-
-/// Extract form data and return a tuple of username and passowrd.
-///
-/// This exists solely as a helper function for pulling data out of an Rc.
-fn build_login(data: &Rc<FormData>) -> Option<(String, String)> {
-    // REFACTOR: this could be fixed up to take an arbitrary amount of data,
-    // Formdata is just a HashMap so iterating on it would work easily.
-    let user = data.values.get("user")?.to_owned();
-    let pass = data.values.get("pass")?.to_owned();
-    Some((user, pass))
 }
