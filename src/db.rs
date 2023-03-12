@@ -61,7 +61,18 @@ impl<State> Mongo<State> {
         }
     }
 }
+
 impl Mongo<Ready> {
+    /// Get a reference to the underlying client.
+    ///
+    /// This should not be made public in production. It is just for dev tests.
+    ///
+    /// You will need to call the database method on the client to get a
+    /// collection.
+    pub fn client(&self) -> &Client {
+        self.client.as_ref().unwrap()
+    }
+
     /// Write an `entry` using [`Self`]'s current configuration.
     ///
     /// # Errors
@@ -142,4 +153,3 @@ impl Mongo<Building> {
         self
     }
 }
-
