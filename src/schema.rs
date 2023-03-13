@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use crate::Table;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, PartialEq, PartialOrd, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all(serialize = "PascalCase"))]
 #[serde(rename_all(deserialize = "snake_case"))]
 pub struct MonsoonItem {
@@ -30,10 +31,42 @@ pub struct MonsoonItem {
     fnsku: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, PartialEq, PartialOrd, Deserialize, Debug, Clone, Default)]
 struct Id {
     #[serde(alias = "$oid")]
     oid: Option<String>,
+}
+
+impl Table for MonsoonItem {
+    fn headers(&self) -> Vec<&str> {
+        vec![
+            "Sku",
+            "Title",
+            "Upc",
+            "PartNum",
+            "Asin",
+            "Locator",
+            "Qt",
+            "Condition",
+            "Price",
+            "Fnsku",
+        ]
+    }
+
+    fn row(&self) -> Vec<&str> {
+        vec![
+            &self.sku.as_deref().unwrap_or_default(),
+            &self.title.as_deref().unwrap_or_default(),
+            &self.upc.as_deref().unwrap_or_default(),
+            &self.manufacturer_part_num.as_deref().unwrap_or_default(),
+            &self.asin.as_deref().unwrap_or_default(),
+            &self.locator_code.as_deref().unwrap_or_default(),
+            &self.quantity.as_deref().unwrap_or_default(),
+            &self.condition.as_deref().unwrap_or_default(),
+            &self.price.as_deref().unwrap_or_default(),
+            &self.fnsku.as_deref().unwrap_or_default(),
+        ]
+    }
 }
 
 #[cfg(test)]
