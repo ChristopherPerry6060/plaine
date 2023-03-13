@@ -30,8 +30,3 @@ fn App(cx: Scope) -> Element {
     })
 }
 
-    cx.render(rsx! {
-        LoginForm { creds: creds, },
-        CredentialStatus { check: check, },
-    })
-}
