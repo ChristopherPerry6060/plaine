@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
-use dioxus::prelude::*;
+use super::{PASS, USER};
+use dioxus::{html::th, prelude::*};
+use dioxus_router::Link;
+use fermi::prelude::*;
 use plaine::db::Mongo;
 
 // LoginForm props.
@@ -25,31 +28,16 @@ impl LoginFormProp {
 }
 
 #[inline_props]
-pub fn LoginChecker<'a>(cx: Scope, check: &'a UseFuture<anyhow::Result<()>>) -> Element<'a> {
-    match check.value()? {
-        Ok(_) => cx.render(rsx! { Link{ to: "/home", "Continue!"} }),
-        Err(e) => cx.render(rsx! {"{e}"}),
-    }
-}
-
-#[inline_props]
 pub fn Login(cx: Scope) -> Element {
     let creds = use_ref(cx, LoginFormProp::default);
-    let check = use_future(cx, creds, |creds| async move {
-        to_owned![creds];
-        let (user, pw) = creds.with(|x| x.clone_get());
-        Mongo::new()
-            .set_user(&user)
-            .set_password(&pw)
-            .set_database("items")
-            .build()
-            .await?
-            .check_credentials()
-            .await
-    });
+    let db = use_coroutine_handle::<super::Action>(cx)?;
+
+    let read_user = use_read(cx, USER);
+    let read_pass = use_read(cx, PASS);
+
     cx.render(rsx! {
-        LoginForm { creds: creds, },
-        LoginChecker { check: check, },
+        LoginForm { },
+        h1 { "{read_user}" },
     })
 }
 
@@ -58,22 +46,46 @@ pub fn Login(cx: Scope) -> Element {
 /// Event handler is passed as a prop , allowing hooks to be implemented
 /// by choice of the caller.
 #[inline_props]
-fn LoginForm<'a>(cx: Scope, creds: &'a UseRef<LoginFormProp>) -> Element<'a> {
-    let (username, password) = creds.with(|i| i.clone_get());
-
+fn LoginForm(cx: Scope) -> Element {
+    let set_user = use_set(cx, USER);
+    let set_pass = use_set(cx, PASS);
     cx.render(rsx! {
         form {
-            onsubmit: move |evt| creds.with_mut(|inner| {
-                let u = evt.values.get("user").unwrap();
-                let p = evt.values.get("pass").cloned().unwrap_or_default();
-                inner.set(&u, &p);
-            }),
+            onsubmit: move |evt| {
+                evt.values.get("user").map(|x| set_user(x.clone()));
+                evt.values.get("pass").map(|x| set_pass(x.clone()));
+            },
             label {r#for: "fuser", "Username: ", },
-            input { r#type: "text", id: "fuser", name: "user", value: "{username}", }, br{},
+            input { r#type: "text", id: "fuser", name: "user", }, br{},
             label {r#for: "fpass", "Password: ", },
-            input { r#type: "password", id: "fpass", name: "pass", value: "{password}", }, br{},
+            input { r#type: "password", id: "fpass", name: "pass", }, br{},
             input { r#type: "submit", },
         },
     })
 }
 
+#[inline_props]
+pub(super) fn ItemTable<T>(cx: Scope, items: Vec<T>) -> Element
+where
+    T: plaine::Table,
+{
+    let hdr = items.last()?.headers().into_iter();
+    let rws = items.iter().map(|x| x.row());
+    cx.render(rsx! {
+        table {
+            tr {
+                for headers in hdr {
+                    td { headers }
+
+                }
+            },
+            for row in rws {
+                tr {
+                    for data in row {
+                        td { data }
+                    }
+                }
+            }
+        },
+    })
+}
