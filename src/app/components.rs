@@ -40,6 +40,24 @@ pub fn LoginChecker<'a>(cx: Scope, check: &'a UseFuture<anyhow::Result<()>>) -> 
 }
 
 #[inline_props]
+pub fn Login(cx: Scope) -> Element {
+    let creds = use_ref(cx, LoginFormProp::default);
+    let check = use_future(cx, creds, |creds| async move {
+        to_owned![creds];
+        let (user, pw) = creds.with(|x| x.clone_get());
+        Mongo::new()
+            .set_user(&user)
+            .set_password(&pw)
+            .set_database("items")
+            .build()
+            .await?
+            .check_credentials()
+            .await
+    });
+    cx.render(rsx! {
+        LoginForm { creds: creds, },
+        LoginChecker { check: check, },
+    })
 }
 
 /// Component to display a login form with a "User" and "Password" field.

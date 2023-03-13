@@ -4,8 +4,8 @@ use dioxus_desktop::{launch_cfg, tao::window::Theme, Config, WindowBuilder};
 use dioxus_router::{Link, Route, Router};
 
 mod components;
-use components::{CredentialStatus, Creds, LoginForm};
 use plaine::db::Mongo;
+use components::{ItemTable, Login};
 
 const STYLESHEET: &str = include_str!("assets/style.css");
 
@@ -26,20 +26,6 @@ fn App(cx: Scope) -> Element {
         Login{ },
     })
 }
-
-fn Login<'a>(cx: Scope<'a>) -> Element<'a> {
-    let creds = use_ref(cx, Creds::default);
-    let check = use_future(cx, creds, |x| async move {
-        let (user, pw) = x.with(|x| x.clone_get());
-        Mongo::new()
-            .set_user(&user)
-            .set_password(&pw)
-            .set_database("items")
-            .build()
-            .await?
-            .check_credentials()
-            .await
-    });
 
     cx.render(rsx! {
         LoginForm { creds: creds, },
