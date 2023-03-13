@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::Table;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, PartialEq, PartialOrd, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -7,7 +7,7 @@ use crate::Table;
 pub struct MonsoonItem {
     #[serde(alias = "_id")]
     #[serde(rename(serialize = "_id"))]
-    id: Id,
+    id: Option<Id>,
     #[serde(alias = "SKU")]
     #[serde(rename(serialize = "SKU"))]
     sku: Option<String>,
@@ -34,7 +34,7 @@ pub struct MonsoonItem {
 #[derive(Serialize, PartialEq, PartialOrd, Deserialize, Debug, Clone, Default)]
 struct Id {
     #[serde(alias = "$oid")]
-    oid: Option<String>,
+    oid: String,
 }
 
 impl Table for MonsoonItem {
