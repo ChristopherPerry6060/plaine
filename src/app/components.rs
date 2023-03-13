@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use std::rc::Rc;
-
+use plaine::db::Mongo;
 
 // LoginForm props.
 //
@@ -51,16 +50,16 @@ pub(super) fn DocumentCount<'a>(cx: Scope, count: &'a UseFuture<Option<u64>>) ->
 /// Event handler is passed as a prop , allowing hooks to be implemented
 /// by choice of the caller.
 #[inline_props]
-pub(super) fn LoginForm<'a>(
-    cx: Scope,
-    creds: &'a Creds,
-    on_submit: EventHandler<'a, FormEvent>,
-) -> Element<'a> {
-    let (username, password) = creds.get().to_owned().unwrap_or_default();
+pub(super) fn LoginForm<'a>(cx: Scope, creds: &'a UseRef<Creds>) -> Element<'a> {
+    let (username, password) = creds.with(|i| i.clone_get());
 
     cx.render(rsx! {
         form {
-            onsubmit: move |event| on_submit.call(event),
+            onsubmit: move |evt| creds.with_mut(|inner| {
+                let u = evt.values.get("user").unwrap();
+                let p = evt.values.get("pass").cloned().unwrap_or_default();
+                inner.set(&u, &p);
+            }),
             label {r#for: "fuser", "Username: ", },
             input { r#type: "text", id: "fuser", name: "user", value: "{username}", }, br{},
             label {r#for: "fpass", "Password: ", },
