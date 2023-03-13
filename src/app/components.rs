@@ -3,22 +3,15 @@ use dioxus::prelude::*;
 use plaine::db::Mongo;
 
 // LoginForm props.
-//
-// A username and password.
 #[derive(Props, PartialEq, Default, Clone, Debug)]
-pub(super) struct Creds {
+pub struct LoginFormProp {
     user: String,
     pass: String,
 }
 
-impl Creds {
+impl LoginFormProp {
     /// Return an `Option<(String, String)>` from [`Self`].
-    fn get(&self) -> (&str, &str) {
-        (self.user.as_ref(), self.pass.as_ref())
-    }
-
-    /// Return an `Option<(String, String)>` from [`Self`].
-    pub(super) fn clone_get(&self) -> (String, String) {
+    fn clone_get(&self) -> (String, String) {
         let user = self.user.clone();
         let pass = self.pass.clone();
         (user, pass)
@@ -65,7 +58,7 @@ pub fn Login(cx: Scope) -> Element {
 /// Event handler is passed as a prop , allowing hooks to be implemented
 /// by choice of the caller.
 #[inline_props]
-pub(super) fn LoginForm<'a>(cx: Scope, creds: &'a UseRef<Creds>) -> Element<'a> {
+fn LoginForm<'a>(cx: Scope, creds: &'a UseRef<LoginFormProp>) -> Element<'a> {
     let (username, password) = creds.with(|i| i.clone_get());
 
     cx.render(rsx! {
@@ -83,3 +76,4 @@ pub(super) fn LoginForm<'a>(cx: Scope, creds: &'a UseRef<Creds>) -> Element<'a> 
         },
     })
 }
+
