@@ -155,6 +155,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
+name = "bitmaps"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "031043d04099746d8db04daf1fa424b2bc8bd69d92b25962dcde24da39ab64a2"
+dependencies = [
+ "typenum",
+]
+
+[[package]]
 name = "block"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -748,7 +757,7 @@ dependencies = [
 [[package]]
 name = "dioxus"
 version = "0.3.2"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "dioxus-core",
  "dioxus-core-macro",
@@ -761,7 +770,7 @@ dependencies = [
 [[package]]
 name = "dioxus-core"
 version = "0.3.2"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "bumpalo",
  "bumpslab",
@@ -779,7 +788,7 @@ dependencies = [
 [[package]]
 name = "dioxus-core-macro"
 version = "0.3.0"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "dioxus-rsx",
  "proc-macro2",
@@ -790,7 +799,7 @@ dependencies = [
 [[package]]
 name = "dioxus-desktop"
 version = "0.3.0"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "core-foundation",
  "dioxus-core",
@@ -816,7 +825,7 @@ dependencies = [
 [[package]]
 name = "dioxus-hooks"
 version = "0.3.0"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "dioxus-core",
  "futures-channel",
@@ -826,7 +835,7 @@ dependencies = [
 [[package]]
 name = "dioxus-hot-reload"
 version = "0.1.1"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "chrono",
  "dioxus-core",
@@ -844,7 +853,7 @@ dependencies = [
 [[package]]
 name = "dioxus-html"
 version = "0.3.1"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "async-trait",
  "dioxus-core",
@@ -860,12 +869,12 @@ dependencies = [
 [[package]]
 name = "dioxus-interpreter-js"
 version = "0.3.1"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 
 [[package]]
 name = "dioxus-router"
 version = "0.3.0"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "dioxus",
  "futures-channel",
@@ -881,7 +890,7 @@ dependencies = [
 [[package]]
 name = "dioxus-rsx"
 version = "0.0.3"
-source = "git+https://github.com/DioxusLabs/dioxus#eee6cbabb20258c0d64621ce9bc156342b25d7ce"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
 dependencies = [
  "dioxus-core",
  "internment",
@@ -1032,6 +1041,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
 dependencies = [
  "instant",
+]
+
+[[package]]
+name = "fermi"
+version = "0.3.0"
+source = "git+https://github.com/DioxusLabs/dioxus#4227edf77a0c324a0e6c305507da0ec84523e42e"
+dependencies = [
+ "dioxus-core",
+ "im-rc",
+ "log",
 ]
 
 [[package]]
@@ -1633,6 +1652,21 @@ dependencies = [
  "thread_local",
  "walkdir",
  "winapi-util",
+]
+
+[[package]]
+name = "im-rc"
+version = "15.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af1955a75fa080c677d3972822ec4bad316169ab1cfc6c257a942c2265dbe5fe"
+dependencies = [
+ "bitmaps",
+ "rand_core 0.6.4",
+ "rand_xoshiro",
+ "serde",
+ "sized-chunks",
+ "typenum",
+ "version_check",
 ]
 
 [[package]]
@@ -2429,6 +2463,7 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "dioxus-router",
+ "fermi",
  "mongodb",
  "parity-wordlist",
  "serde",
@@ -2605,6 +2640,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
  "rand_core 0.5.1",
+]
+
+[[package]]
+name = "rand_xoshiro"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f97cdb2a36ed4183de61b2f824cc45c9f1037f28afe0a322e9fff4c108b5aaa"
+dependencies = [
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -2966,6 +3010,16 @@ name = "siphasher"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7bd3e3206899af3f8b12af284fafc038cc1dc2b41d1b89dd17297221c5d225de"
+
+[[package]]
+name = "sized-chunks"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16d69225bde7a69b235da73377861095455d298f2b970996eec25ddbb42b3d1e"
+dependencies = [
+ "bitmaps",
+ "typenum",
+]
 
 [[package]]
 name = "slab"
