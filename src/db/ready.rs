@@ -30,6 +30,17 @@ impl Mongo<Ready> {
         Ok(count?)
     }
 
+    /// Query the database for arbitrary data, checking if credentials are valid
+    pub async fn check_credentials(&self) -> anyhow::Result<()> {
+        println!("tried");
+        if let Some(client) = &self.client {
+            client
+                .database(&self.database)
+                .list_collection_names(None)
+                .await?;
+        };
+        Ok(())
+    }
     /// Write an `entry` using [`Self`]'s current configuration.
     ///
     /// # Errors
