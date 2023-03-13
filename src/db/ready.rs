@@ -1,6 +1,6 @@
 use super::Mongo;
 use anyhow::{anyhow, Result};
-use mongodb::bson::Document;
+use mongodb::{bson::Document, Cursor};
 
 /// An item that can be serialized to a [`Document`] and stored to Mongo.
 ///
@@ -18,7 +18,23 @@ pub trait MongOne {
 pub struct Ready;
 
 impl Mongo<Ready> {
-    pub async fn count_docs_in_collection(&self, collection: &str) -> anyhow::Result<u64> {
+    /// Query a given `database` and `collection` with the given filter.
+    pub async fn query<T, U>(
+        &self,
+        database: &str,
+        collection: &str,
+        filter: U,
+    ) -> Result<Cursor<T>>
+    where
+        U: Into<Option<Document>>,
+    {
+        let cl = self.client.as_ref().ok_or_else(|| anyhow!("No client"))?;
+        let coll = cl.database(database).collection::<T>(collection);
+        let cursor = coll.find(filter.into(), None).await?;
+        Ok(cursor)
+    }
+
+    pub async fn count_docs_in_collection(&self, collection: &str) -> Result<u64> {
         let count = self
             .client
             .as_ref()
@@ -31,16 +47,15 @@ impl Mongo<Ready> {
     }
 
     /// Query the database for arbitrary data, checking if credentials are valid
-    pub async fn check_credentials(&self) -> anyhow::Result<()> {
-        println!("tried");
+    ///
+    /// This check is implemented by requesting collection names from "local".
+    pub async fn check_credentials(&self) -> Result<()> {
         if let Some(client) = &self.client {
-            client
-                .database(&self.database)
-                .list_collection_names(None)
-                .await?;
+            client.database("local").list_collection_names(None).await?;
         };
         Ok(())
     }
+
     /// Write an `entry` using [`Self`]'s current configuration.
     ///
     /// # Errors
