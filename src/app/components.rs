@@ -31,18 +31,15 @@ impl Creds {
     }
 }
 
+#[inline_props]
+pub fn LoginChecker<'a>(cx: Scope, check: &'a UseFuture<anyhow::Result<()>>) -> Element<'a> {
+    match check.value()? {
+        Ok(_) => cx.render(rsx! { Link{ to: "/home", "Continue!"} }),
+        Err(e) => cx.render(rsx! {"{e}"}),
     }
 }
 
 #[inline_props]
-pub(super) fn DocumentCount<'a>(cx: Scope, count: &'a UseFuture<Option<u64>>) -> Element {
-    if let Some(number) = count.value()? {
-        cx.render(rsx! {
-            h1 { "{number}" }
-        })
-    } else {
-        None
-    }
 }
 
 /// Component to display a login form with a "User" and "Password" field.
