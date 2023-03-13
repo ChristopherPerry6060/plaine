@@ -17,6 +17,7 @@ tokio = { version = "1.26.0", features = ["rt", "rt-multi-thread",  "macros", "f
 dioxus = { git = "https://github.com/DioxusLabs/dioxus" }
 dioxus-desktop = { git = "https://github.com/DioxusLabs/dioxus" }
 dioxus-router = { git = "https://github.com/DioxusLabs/dioxus" }
+tokio-stream = "0.1.12"
 
 [[bin]]
 name = "plaine"
