@@ -1,9 +1,11 @@
+#![allow(dead_code, unused_imports, unused_variables, non_snake_case)]
 use dioxus::prelude::*;
 use dioxus_desktop::{launch_cfg, tao::window::Theme, Config, WindowBuilder};
-use plaine::db::{Mongo, Ready};
+use dioxus_router::{Link, Route, Router};
 
 mod components;
-use components::{Creds, DocumentCount, LoginForm};
+use components::{CredentialStatus, Creds, LoginForm};
+use plaine::db::Mongo;
 
 const STYLESHEET: &str = include_str!("assets/style.css");
 
@@ -20,39 +22,27 @@ fn main() {
 
 #[allow(non_snake_case)]
 fn App(cx: Scope) -> Element {
-    // login is Option<(username, password)>.
-    let creds = use_state(cx, Creds::default);
-
-    // I can probably just pass the &UseRef<Creds> instead of cloning
-    let count = use_future(cx, creds, |login| async move {
-        db(&login)
-            .await
-            .unwrap_or_default()
-            .count_docs_in_collection("monsoon")
-            .await
-            .ok()
-    });
-
     cx.render(rsx! {
-        LoginForm {
-            creds: creds,
-            on_submit: move |event: Event<FormData>| {
-               let data = Creds::try_from(&event.data).unwrap_or_default();
-               creds.set(Creds::default());
-            },
-        },
-        DocumentCount { count: count },
+        Login{ },
     })
 }
 
-async fn db(creds: &Creds) -> anyhow::Result<Mongo<Ready>> {
-    let (user, pw) = creds
-        .get()
-        .ok_or_else(|| anyhow::anyhow!("No Credentials"))?;
-    Mongo::new()
-        .set_user(user)
-        .set_password(pw)
-        .set_database("items")
-        .build()
-        .await
+fn Login<'a>(cx: Scope<'a>) -> Element<'a> {
+    let creds = use_ref(cx, Creds::default);
+    let check = use_future(cx, creds, |x| async move {
+        let (user, pw) = x.with(|x| x.clone_get());
+        Mongo::new()
+            .set_user(&user)
+            .set_password(&pw)
+            .set_database("items")
+            .build()
+            .await?
+            .check_credentials()
+            .await
+    });
+
+    cx.render(rsx! {
+        LoginForm { creds: creds, },
+        CredentialStatus { check: check, },
+    })
 }
