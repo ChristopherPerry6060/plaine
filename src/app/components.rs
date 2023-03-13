@@ -6,27 +6,32 @@ use std::rc::Rc;
 // LoginForm props.
 //
 // A username and password.
-#[derive(Props, PartialEq, Default, Clone)]
+#[derive(Props, PartialEq, Default, Clone, Debug)]
 pub(super) struct Creds {
-    user: Option<String>,
-    pass: Option<String>,
-}
-
-impl TryFrom<&Rc<FormData>> for Creds {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &Rc<FormData>) -> Result<Self, Self::Error> {
-        let user = value.values.get("user").cloned();
-        let pass = value.values.get("pass").cloned();
-        Ok(Creds { user, pass })
-    }
+    user: String,
+    pass: String,
 }
 
 impl Creds {
-    pub(super) fn get(&self) -> Option<(&str, &str)> {
-        let user = &self.user.as_ref()?;
-        let pass = &self.pass.as_ref()?;
-        Some((user, pass))
+    /// Return an `Option<(String, String)>` from [`Self`].
+    fn get(&self) -> (&str, &str) {
+        (self.user.as_ref(), self.pass.as_ref())
+    }
+
+    /// Return an `Option<(String, String)>` from [`Self`].
+    pub(super) fn clone_get(&self) -> (String, String) {
+        let user = self.user.clone();
+        let pass = self.pass.clone();
+        (user, pass)
+    }
+
+    /// Mutate [`Self`] with the given `user` and `pass`.
+    fn set(&mut self, user: &str, pass: &str) {
+        self.user = user.to_string();
+        self.pass = pass.to_string();
+    }
+}
+
     }
 }
 
