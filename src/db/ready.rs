@@ -18,16 +18,17 @@ pub trait MongOne {
 pub struct Ready;
 
 impl Mongo<Ready> {
-    /// Query a given `database` and `collection` with the given filter.
-    pub async fn query<T, U>(
+    /// Query a collection and return the cursor pointing to results.
+    ///
+    /// This is just a wrapper around [`find`] function in [`mongodb`].
+    ///
+    /// [`find`]: (Collection::<T>::find)
+    pub async fn find<T>(
         &self,
         database: &str,
         collection: &str,
-        filter: U,
-    ) -> Result<Cursor<T>>
-    where
-        U: Into<Option<Document>>,
-    {
+        filter: impl Into<Option<Document>>,
+    ) -> Result<Cursor<T>> {
         let cl = self.client.as_ref().ok_or_else(|| anyhow!("No client"))?;
         let coll = cl.database(database).collection::<T>(collection);
         let cursor = coll.find(filter.into(), None).await?;
